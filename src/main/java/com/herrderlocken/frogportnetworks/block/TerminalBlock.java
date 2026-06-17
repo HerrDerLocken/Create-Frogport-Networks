@@ -1,6 +1,7 @@
 package com.herrderlocken.frogportnetworks.block;
 
 import com.herrderlocken.frogportnetworks.blockentity.TerminalBlockEntity;
+import com.herrderlocken.frogportnetworks.network.NetworkManager;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -49,12 +50,28 @@ public class TerminalBlock extends BaseEntityBlock {
         return new TerminalBlockEntity(pos, state);
     }
 
+    /** Beim Entfernen die belegte IP im Netzwerk wieder freigeben. */
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.is(newState.getBlock()) && !level.isClientSide) {
+            NetworkManager.unregisterDevice(pos);
+        }
+        super.onRemove(state, level, pos, newState, moved);
+    }
+
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
                                                Player player, BlockHitResult hitResult) {
-        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            // TODO: Terminal-GUI öffnen (Phase 2)
-            // Zeigt aggregierte Ansicht aller NAS-Inventare im Netzwerk
+        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer
+                && level.getBlockEntity(pos) instanceof TerminalBlockEntity terminal) {
+            // Beim ersten Öffnen automatisch verbinden, danach manuell per Button erneuern.
+            if (!terminal.isConnected()) {
+                terminal.requestDhcp();
+            }
+            serverPlayer.openMenu(terminal, buf -> {
+                buf.writeBlockPos(pos);
+                terminal.writeToBuffer(buf);
+            });
         }
         return InteractionResult.SUCCESS;
     }

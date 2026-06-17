@@ -2,6 +2,7 @@ package com.herrderlocken.frogportnetworks.registry;
 
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
 import com.herrderlocken.frogportnetworks.menu.RouterMenu;
+import com.herrderlocken.frogportnetworks.menu.TerminalMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -27,6 +28,10 @@ public class ModMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<RouterMenu>> ROUTER_MENU =
             MENUS.register("router_menu",
                     () -> IMenuTypeExtension.create(RouterMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<TerminalMenu>> TERMINAL_MENU =
+            MENUS.register("terminal_menu",
+                    () -> IMenuTypeExtension.create(TerminalMenu::new));
 
     public static void register() {}
 }

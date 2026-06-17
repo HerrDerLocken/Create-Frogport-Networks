@@ -1,6 +1,7 @@
 package com.herrderlocken.frogportnetworks.block;
 
 import com.herrderlocken.frogportnetworks.blockentity.RouterBlockEntity;
+import com.herrderlocken.frogportnetworks.network.NetworkManager;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -35,6 +36,15 @@ public class RouterBlock extends BaseEntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new RouterBlockEntity(pos, state);
+    }
+
+    /** Beim Entfernen die Router-IP im Netzwerk wieder freigeben. */
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.is(newState.getBlock()) && !level.isClientSide) {
+            NetworkManager.unregisterDevice(pos);
+        }
+        super.onRemove(state, level, pos, newState, moved);
     }
 
     /**

@@ -1,9 +1,15 @@
 package com.herrderlocken.frogportnetworks.network;
 
+import com.herrderlocken.frogportnetworks.block.NASBlock;
 import com.herrderlocken.frogportnetworks.block.NetworkCableBlock;
+import com.herrderlocken.frogportnetworks.block.RouterBlock;
+import com.herrderlocken.frogportnetworks.block.TerminalBlock;
+import com.herrderlocken.frogportnetworks.blockentity.NetworkCableBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 
 import java.util.*;
 
@@ -104,6 +110,63 @@ public class NetworkManager {
         }
 
         return devices;
+    }
+
+    /**
+     * Farb-bewusste Discovery: findet alle Netzgeräte, die von 'start' aus über
+     * Kabel EINER bestimmten Farbe erreichbar sind.
+     *
+     * Anders als {@link #discoverNetwork} folgt diese Suche nur Kabel-Segmenten der
+     * gegebenen Farbe — so sind unterschiedlich gefärbte Netze logisch getrennt.
+     * Startpunkt ist ein Gerät (z.B. Terminal); die Suche beginnt an dessen
+     * angrenzenden farbgleichen Kabeln.
+     *
+     * @return Positionen aller erreichbaren Geräte (Router/NAS/Terminal), ohne 'start'.
+     */
+    public static Set<BlockPos> discoverOnColor(Level level, BlockPos start, DyeColor color, int maxDepth) {
+        Set<BlockPos> devices = new HashSet<>();
+        Set<BlockPos> visited = new HashSet<>();
+        Queue<BlockPos> queue = new LinkedList<>();
+        Map<BlockPos, Integer> depth = new HashMap<>();
+
+        // Start: angrenzende Kabel der passenden Farbe
+        for (Direction dir : Direction.values()) {
+            BlockPos neighbor = start.relative(dir);
+            if (isColorCable(level, neighbor, color)) {
+                visited.add(neighbor);
+                depth.put(neighbor, 1);
+                queue.add(neighbor);
+            }
+        }
+
+        while (!queue.isEmpty()) {
+            BlockPos current = queue.poll();
+            if (depth.get(current) > maxDepth) continue;
+
+            for (Direction dir : Direction.values()) {
+                BlockPos neighbor = current.relative(dir);
+                if (isColorCable(level, neighbor, color)) {
+                    if (visited.add(neighbor)) {
+                        depth.put(neighbor, depth.get(current) + 1);
+                        queue.add(neighbor);
+                    }
+                } else if (!neighbor.equals(start) && isDevice(level, neighbor)) {
+                    devices.add(neighbor);
+                }
+            }
+        }
+        return devices;
+    }
+
+    private static boolean isColorCable(Level level, BlockPos pos, DyeColor color) {
+        return level.getBlockState(pos).getBlock() instanceof NetworkCableBlock
+                && level.getBlockEntity(pos) instanceof NetworkCableBlockEntity be
+                && be.hasSegment(color);
+    }
+
+    private static boolean isDevice(Level level, BlockPos pos) {
+        Block block = level.getBlockState(pos).getBlock();
+        return block instanceof RouterBlock || block instanceof NASBlock || block instanceof TerminalBlock;
     }
 
     /** Räumt alle Registrierungen auf (z.B. beim Server-Stop). */

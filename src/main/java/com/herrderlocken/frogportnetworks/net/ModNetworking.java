@@ -30,5 +30,26 @@ public class ModNetworking {
                 UpdateRouterPacket.STREAM_CODEC,
                 UpdateRouterPacket::handle
         );
+
+        // Client → Server: Terminal per DHCP (neu) verbinden
+        registrar.playToServer(
+                RequestDhcpPacket.TYPE,
+                RequestDhcpPacket.STREAM_CODEC,
+                RequestDhcpPacket::handle
+        );
+
+        // Client → Server: Terminal mit manueller (statischer) IP verbinden
+        registrar.playToServer(
+                SetStaticIpPacket.TYPE,
+                SetStaticIpPacket.STREAM_CODEC,
+                SetStaticIpPacket::handle
+        );
+
+        // Client → Server: Terminal-Netz (Kabelfarbe) wählen
+        registrar.playToServer(
+                SelectNetworkPacket.TYPE,
+                SelectNetworkPacket.STREAM_CODEC,
+                SelectNetworkPacket::handle
+        );
     }
 }

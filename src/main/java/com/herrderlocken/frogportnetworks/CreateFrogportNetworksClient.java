@@ -6,6 +6,7 @@ import com.herrderlocken.frogportnetworks.registry.ModBlockEntities;
 import com.herrderlocken.frogportnetworks.registry.ModItems;
 import com.herrderlocken.frogportnetworks.registry.ModMenuTypes;
 import com.herrderlocken.frogportnetworks.screen.RouterScreen;
+import com.herrderlocken.frogportnetworks.screen.TerminalScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -44,6 +45,7 @@ public class CreateFrogportNetworksClient {
     @SubscribeEvent
     static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.ROUTER_MENU.get(), RouterScreen::new);
+        event.register(ModMenuTypes.TERMINAL_MENU.get(), TerminalScreen::new);
     }
 
     @SubscribeEvent

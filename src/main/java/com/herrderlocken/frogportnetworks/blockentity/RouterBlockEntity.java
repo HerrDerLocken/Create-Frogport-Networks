@@ -3,6 +3,7 @@ package com.herrderlocken.frogportnetworks.blockentity;
 import com.herrderlocken.frogportnetworks.Config;
 import com.herrderlocken.frogportnetworks.menu.RouterMenu;
 import com.herrderlocken.frogportnetworks.network.IPAddress;
+import com.herrderlocken.frogportnetworks.network.NetworkManager;
 import com.herrderlocken.frogportnetworks.network.RoutingTable;
 import com.herrderlocken.frogportnetworks.network.SubnetMask;
 import com.herrderlocken.frogportnetworks.registry.ModBlockEntities;
@@ -28,7 +29,6 @@ public class RouterBlockEntity extends BlockEntity implements MenuProvider {
 
     private int dhcpPoolStart;
     private int dhcpPoolEnd;
-    private int dhcpNextOffer;
     private boolean dhcpEnabled = true;
 
     public RouterBlockEntity(BlockPos pos, BlockState state) {
@@ -37,7 +37,6 @@ public class RouterBlockEntity extends BlockEntity implements MenuProvider {
         this.subnetMask = SubnetMask.fromCIDR(cidrPrefix);
         this.dhcpPoolStart = Config.DHCP_POOL_START.getAsInt();
         this.dhcpPoolEnd = Config.DHCP_POOL_END.getAsInt();
-        this.dhcpNextOffer = dhcpPoolStart;
     }
 
     @Override
@@ -72,18 +71,38 @@ public class RouterBlockEntity extends BlockEntity implements MenuProvider {
         buf.writeVarInt(dhcpPoolEnd);
     }
 
+    /**
+     * Vergibt die NIEDRIGSTE freie Adresse aus dem Pool (überspringt belegte).
+     * Dadurch werden freigewordene Adressen wiederverwendet, statt stur hochzuzählen.
+     * @return freie IP oder null, wenn DHCP aus ist / der Pool voll ist.
+     */
     public IPAddress assignDHCP() {
-        if (!dhcpEnabled || dhcpNextOffer > dhcpPoolEnd) return null;
-        IPAddress newIp = new IPAddress(
-                ipAddress.getOctet(0), ipAddress.getOctet(1),
-                ipAddress.getOctet(2), dhcpNextOffer);
-        dhcpNextOffer++;
-        setChanged();
-        return newIp;
+        if (!dhcpEnabled) return null;
+        for (int host = dhcpPoolStart; host <= dhcpPoolEnd; host++) {
+            IPAddress candidate = new IPAddress(
+                    ipAddress.getOctet(0), ipAddress.getOctet(1), ipAddress.getOctet(2), host);
+            if (!NetworkManager.isIPTaken(candidate)) {
+                return candidate;
+            }
+        }
+        return null; // Pool erschöpft
     }
 
     public IPAddress getIpAddress() { return ipAddress; }
-    public void setIpAddress(IPAddress ip) { this.ipAddress = ip; setChanged(); }
+    public void setIpAddress(IPAddress ip) {
+        this.ipAddress = ip;
+        setChanged();
+        if (level != null && !level.isClientSide) NetworkManager.registerDevice(worldPosition, ip);
+    }
+
+    /** Eigene IP beim Laden registrieren, damit sie nicht als "frei" gilt (DHCP/statisch). */
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && !level.isClientSide && ipAddress != null) {
+            NetworkManager.registerDevice(worldPosition, ipAddress);
+        }
+    }
     public SubnetMask getSubnetMask() { return subnetMask; }
     public int getCidrPrefix() { return cidrPrefix; }
     public void setCidrPrefix(int prefix) {
@@ -106,7 +125,6 @@ public class RouterBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt("cidr", cidrPrefix);
         tag.putInt("dhcpStart", dhcpPoolStart);
         tag.putInt("dhcpEnd", dhcpPoolEnd);
-        tag.putInt("dhcpNext", dhcpNextOffer);
         tag.putBoolean("dhcpEnabled", dhcpEnabled);
     }
 
@@ -120,7 +138,6 @@ public class RouterBlockEntity extends BlockEntity implements MenuProvider {
         }
         if (tag.contains("dhcpStart")) this.dhcpPoolStart = tag.getInt("dhcpStart");
         if (tag.contains("dhcpEnd")) this.dhcpPoolEnd = tag.getInt("dhcpEnd");
-        if (tag.contains("dhcpNext")) this.dhcpNextOffer = tag.getInt("dhcpNext");
         if (tag.contains("dhcpEnabled")) this.dhcpEnabled = tag.getBoolean("dhcpEnabled");
     }
 }

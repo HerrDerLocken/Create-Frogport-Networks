@@ -5,6 +5,7 @@
   "block.frogportnetworks.nas": "NAS (Network Storage)",
   "block.frogportnetworks.terminal": "Network Terminal",
   "gui.frogportnetworks.router": "Network Router",
+  "gui.frogportnetworks.terminal": "Network Terminal",
 
   "item.frogportnetworks.copper_cable": "Copper Cable",
   "item.frogportnetworks.gold_cable": "Gold Cable",
