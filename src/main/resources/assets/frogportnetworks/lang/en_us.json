@@ -1,0 +1,8 @@
+{
+  "itemGroup.frogportnetworks": "Frogport Networks",
+  "block.frogportnetworks.router": "Network Router",
+  "block.frogportnetworks.network_cable": "Network Cable",
+  "block.frogportnetworks.nas": "NAS (Network Storage)",
+  "block.frogportnetworks.terminal": "Network Terminal",
+  "gui.frogportnetworks.router": "Network Router"
+}
