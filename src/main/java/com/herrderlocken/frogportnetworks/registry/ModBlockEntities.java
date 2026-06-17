@@ -3,6 +3,7 @@ package com.herrderlocken.frogportnetworks.registry;
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
 import com.herrderlocken.frogportnetworks.blockentity.RouterBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.NASBlockEntity;
+import com.herrderlocken.frogportnetworks.blockentity.NetworkCableBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.TerminalBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -36,6 +37,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("nas",
                     () -> BlockEntityType.Builder.of(NASBlockEntity::new,
                             ModBlocks.NAS.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<NetworkCableBlockEntity>> CABLE =
+            BLOCK_ENTITIES.register("network_cable",
+                    () -> BlockEntityType.Builder.of(NetworkCableBlockEntity::new,
+                            ModBlocks.NETWORK_CABLE.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TerminalBlockEntity>> TERMINAL =
             BLOCK_ENTITIES.register("terminal",

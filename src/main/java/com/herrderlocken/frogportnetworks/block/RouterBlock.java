@@ -54,7 +54,10 @@ public class RouterBlock extends BaseEntityBlock {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof RouterBlockEntity routerEntity) {
-                serverPlayer.openMenu(routerEntity, buf -> buf.writeBlockPos(pos));
+                serverPlayer.openMenu(routerEntity, buf -> {
+                    buf.writeBlockPos(pos);
+                    routerEntity.writeToBuffer(buf);
+                });
             }
         }
         return InteractionResult.SUCCESS;

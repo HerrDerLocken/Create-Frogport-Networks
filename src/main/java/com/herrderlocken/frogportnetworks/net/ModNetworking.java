@@ -16,7 +16,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  * playToServer = Client → Server (z.B. "Spieler hat IP geändert")
  * playToClient = Server → Client (z.B. "Netzwerk-Status Update")
  */
-@EventBusSubscriber(modid = CreateFrogportNetworks.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = CreateFrogportNetworks.MODID)
 public class ModNetworking {
 
     @SubscribeEvent

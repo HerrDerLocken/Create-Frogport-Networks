@@ -54,7 +54,15 @@ public class RouterMenu extends AbstractContainerMenu {
     public RouterMenu(int containerId, Inventory playerInv, FriendlyByteBuf extraData) {
         super(ModMenuTypes.ROUTER_MENU.get(), containerId);
         this.blockPos = extraData.readBlockPos();
-        this.data = new SimpleContainerData(DATA_SIZE);
+
+        // Initialwerte direkt aus dem Öffnungs-Buffer lesen (siehe RouterBlockEntity#writeToBuffer).
+        // So hat der Client die echten Werte bereits bei der Konstruktion — bevor RouterScreen.init()
+        // läuft — und umgeht das ContainerData-Sync-Race, das sonst Defaults (0.0.0.0) anzeigte.
+        SimpleContainerData seeded = new SimpleContainerData(DATA_SIZE);
+        for (int i = 0; i < DATA_SIZE; i++) {
+            seeded.set(i, extraData.readVarInt());
+        }
+        this.data = seeded;
         addDataSlots(this.data);
     }
 

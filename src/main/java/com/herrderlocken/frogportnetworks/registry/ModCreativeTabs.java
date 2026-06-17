@@ -20,7 +20,9 @@ public class ModCreativeTabs {
                             .icon(() -> ModItems.ROUTER_ITEM.get().getDefaultInstance())
                             .displayItems((params, output) -> {
                                 output.accept(ModItems.ROUTER_ITEM.get());
-                                output.accept(ModItems.NETWORK_CABLE_ITEM.get());
+                                output.accept(ModItems.COPPER_CABLE.get());
+                                output.accept(ModItems.GOLD_CABLE.get());
+                                output.accept(ModItems.FIBER_CABLE.get());
                                 output.accept(ModItems.NAS_ITEM.get());
                                 output.accept(ModItems.TERMINAL_ITEM.get());
                             })

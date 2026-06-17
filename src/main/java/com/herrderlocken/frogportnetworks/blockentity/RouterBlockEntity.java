@@ -9,6 +9,7 @@ import com.herrderlocken.frogportnetworks.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -48,6 +49,27 @@ public class RouterBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     public AbstractContainerMenu createMenu(int containerId, Inventory playerInv, Player player) {
         return new RouterMenu(containerId, playerInv, this);
+    }
+
+    /**
+     * Schreibt die aktuellen Einstellungen in den Menu-Buffer beim Öffnen der GUI.
+     *
+     * Wichtig gegen den Sync-Race: Die ContainerData wird erst einen Tick NACH
+     * dem Öffnen synchronisiert — zu spät für RouterScreen.init(). Indem wir die
+     * Werte direkt in den Öffnungs-Buffer schreiben, hat der Client sie sofort
+     * bei der Menu-Konstruktion und die GUI zeigt von Anfang an die echten Werte.
+     *
+     * Reihenfolge muss exakt mit dem Client-Konstruktor in RouterMenu übereinstimmen.
+     */
+    public void writeToBuffer(FriendlyByteBuf buf) {
+        buf.writeVarInt(ipAddress.getOctet(0));
+        buf.writeVarInt(ipAddress.getOctet(1));
+        buf.writeVarInt(ipAddress.getOctet(2));
+        buf.writeVarInt(ipAddress.getOctet(3));
+        buf.writeVarInt(cidrPrefix);
+        buf.writeVarInt(dhcpEnabled ? 1 : 0);
+        buf.writeVarInt(dhcpPoolStart);
+        buf.writeVarInt(dhcpPoolEnd);
     }
 
     public IPAddress assignDHCP() {

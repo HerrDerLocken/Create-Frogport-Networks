@@ -3,10 +3,8 @@ package com.herrderlocken.frogportnetworks.net;
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
 import com.herrderlocken.frogportnetworks.blockentity.RouterBlockEntity;
 import com.herrderlocken.frogportnetworks.network.IPAddress;
-import com.herrderlocken.frogportnetworks.network.SubnetMask;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -45,17 +43,25 @@ public record UpdateRouterPacket(
      * composite() kombiniert mehrere Codecs zu einem — wie ein Builder.
      */
     public static final StreamCodec<FriendlyByteBuf, UpdateRouterPacket> STREAM_CODEC =
-            StreamCodec.composite(
-                    BlockPos.STREAM_CODEC, UpdateRouterPacket::pos,
-                    ByteBufCodecs.INT, UpdateRouterPacket::ip0,
-                    ByteBufCodecs.INT, UpdateRouterPacket::ip1,
-                    ByteBufCodecs.INT, UpdateRouterPacket::ip2,
-                    ByteBufCodecs.INT, UpdateRouterPacket::ip3,
-                    ByteBufCodecs.INT, UpdateRouterPacket::cidrPrefix,
-                    ByteBufCodecs.BOOL, UpdateRouterPacket::dhcpEnabled,
-                    ByteBufCodecs.INT, UpdateRouterPacket::dhcpPoolStart,
-                    ByteBufCodecs.INT, UpdateRouterPacket::dhcpPoolEnd,
-                    UpdateRouterPacket::new
+            StreamCodec.of(
+                    (buf, packet) -> {
+                        buf.writeBlockPos(packet.pos());
+                        buf.writeVarInt(packet.ip0());
+                        buf.writeVarInt(packet.ip1());
+                        buf.writeVarInt(packet.ip2());
+                        buf.writeVarInt(packet.ip3());
+                        buf.writeVarInt(packet.cidrPrefix());
+                        buf.writeBoolean(packet.dhcpEnabled());
+                        buf.writeVarInt(packet.dhcpPoolStart());
+                        buf.writeVarInt(packet.dhcpPoolEnd());
+                    },
+                    buf -> new UpdateRouterPacket(
+                            buf.readBlockPos(),
+                            buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
+                            buf.readVarInt(),
+                            buf.readBoolean(),
+                            buf.readVarInt(), buf.readVarInt()
+                    )
             );
 
     @Override
@@ -101,7 +107,7 @@ public record UpdateRouterPacket(
 
             // Alles okay → Werte setzen
             router.setIpAddress(new IPAddress(packet.ip0(), packet.ip1(), packet.ip2(), packet.ip3()));
-            router.setSubnetMask(SubnetMask.fromCIDR(packet.cidrPrefix()));
+            router.setCidrPrefix(packet.cidrPrefix());
             router.setDhcpEnabled(packet.dhcpEnabled());
             router.setDhcpPoolStart(packet.dhcpPoolStart());
             router.setDhcpPoolEnd(packet.dhcpPoolEnd());

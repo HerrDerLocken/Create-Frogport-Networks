@@ -4,5 +4,14 @@
   "block.frogportnetworks.network_cable": "Network Cable",
   "block.frogportnetworks.nas": "NAS (Network Storage)",
   "block.frogportnetworks.terminal": "Network Terminal",
-  "gui.frogportnetworks.router": "Network Router"
+  "gui.frogportnetworks.router": "Network Router",
+
+  "item.frogportnetworks.copper_cable": "Copper Cable",
+  "item.frogportnetworks.gold_cable": "Gold Cable",
+  "item.frogportnetworks.fiber_cable": "Fiber Cable",
+
+  "color.frogportnetworks.red": "Red",
+  "color.frogportnetworks.green": "Green",
+  "color.frogportnetworks.blue": "Blue",
+  "color.frogportnetworks.yellow": "Yellow"
 }
