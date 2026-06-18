@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": {
+      "item": "create:precision_mechanism"
+    },
+    "B": {
+      "item": "create:brass_sheet"
+    },
+    "D": {
+      "item": "frogportnetworks:storage_disk_64k"
+    }
+  },
+  "pattern": [
+    "BPB",
+    "DDD",
+    "BPB"
+  ],
+  "result": {
+    "count": 1,
+    "id": "frogportnetworks:storage_disk_256k"
+  }
+}

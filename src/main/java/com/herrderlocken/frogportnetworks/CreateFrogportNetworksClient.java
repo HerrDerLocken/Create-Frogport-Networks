@@ -1,10 +1,15 @@
 package com.herrderlocken.frogportnetworks;
 
 import com.herrderlocken.frogportnetworks.client.CableRenderer;
+import com.simibubi.create.content.kinetics.base.ShaftRenderer;
 import com.herrderlocken.frogportnetworks.item.CableBlockItem;
 import com.herrderlocken.frogportnetworks.registry.ModBlockEntities;
 import com.herrderlocken.frogportnetworks.registry.ModItems;
 import com.herrderlocken.frogportnetworks.registry.ModMenuTypes;
+import com.herrderlocken.frogportnetworks.screen.NASScreen;
+import com.herrderlocken.frogportnetworks.screen.NetworkPortScreen;
+import com.herrderlocken.frogportnetworks.screen.NetworkMonitorScreen;
+import com.herrderlocken.frogportnetworks.screen.NetworkBridgeScreen;
 import com.herrderlocken.frogportnetworks.screen.RouterScreen;
 import com.herrderlocken.frogportnetworks.screen.TerminalScreen;
 import net.neoforged.api.distmarker.Dist;
@@ -46,6 +51,10 @@ public class CreateFrogportNetworksClient {
     static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.ROUTER_MENU.get(), RouterScreen::new);
         event.register(ModMenuTypes.TERMINAL_MENU.get(), TerminalScreen::new);
+        event.register(ModMenuTypes.NAS_MENU.get(), NASScreen::new);
+        event.register(ModMenuTypes.NETWORK_PORT_MENU.get(), NetworkPortScreen::new);
+        event.register(ModMenuTypes.NETWORK_MONITOR_MENU.get(), NetworkMonitorScreen::new);
+        event.register(ModMenuTypes.NETWORK_BRIDGE_MENU.get(), NetworkBridgeScreen::new);
     }
 
     @SubscribeEvent
@@ -57,6 +66,8 @@ public class CreateFrogportNetworksClient {
     @SubscribeEvent
     static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModBlockEntities.CABLE.get(), CableRenderer::create);
+        // Router: rotierende Welle entlang seiner Achse (Create-Kinetik-Optik).
+        event.registerBlockEntityRenderer(ModBlockEntities.ROUTER.get(), ShaftRenderer::new);
     }
 
     /** Färbt das Kabel-Icon nach Kabel-TYP (Kupfer/Gold/Glasfaser), damit man den Typ im Inventar sieht. */

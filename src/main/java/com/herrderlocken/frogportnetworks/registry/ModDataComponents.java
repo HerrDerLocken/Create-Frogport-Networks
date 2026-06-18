@@ -1,6 +1,7 @@
 package com.herrderlocken.frogportnetworks.registry;
 
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
+import com.herrderlocken.frogportnetworks.storage.DiskContents;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.DyeColor;
@@ -25,6 +26,14 @@ public class ModDataComponents {
                     () -> DataComponentType.<DyeColor>builder()
                             .persistent(DyeColor.CODEC)
                             .networkSynchronized(DyeColor.STREAM_CODEC)
+                            .build());
+
+    /** Inhalt einer Speicher-Disk (die gelagerten Items liegen direkt auf dem Item). */
+    public static final Supplier<DataComponentType<DiskContents>> DISK_CONTENTS =
+            DATA_COMPONENTS.register("disk_contents",
+                    () -> DataComponentType.<DiskContents>builder()
+                            .persistent(DiskContents.CODEC)
+                            .networkSynchronized(DiskContents.STREAM_CODEC)
                             .build());
 
     public static void register() {}

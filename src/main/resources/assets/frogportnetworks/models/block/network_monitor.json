@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "frogportnetworks:block/network_monitor",
+    "north": "frogportnetworks:block/network_monitor",
+    "south": "frogportnetworks:block/casing_side",
+    "east": "frogportnetworks:block/casing_side",
+    "west": "frogportnetworks:block/casing_side",
+    "up": "frogportnetworks:block/casing_top",
+    "down": "frogportnetworks:block/casing_top"
+  }
+}

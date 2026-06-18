@@ -1,7 +1,7 @@
 package com.herrderlocken.frogportnetworks.net;
 
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
-import com.herrderlocken.frogportnetworks.blockentity.TerminalBlockEntity;
+import com.herrderlocken.frogportnetworks.blockentity.AbstractNetworkDeviceBlockEntity;
 import com.herrderlocken.frogportnetworks.network.IPAddress;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -14,7 +14,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * SetStaticIpPacket — Client → Server: Terminal soll eine manuell eingegebene IP nutzen.
- * Der Server prüft (Subnetz + frei) und übernimmt sie via {@link TerminalBlockEntity#requestStatic}.
+ * Der Server prüft (Subnetz + frei) und übernimmt sie via {@link AbstractNetworkDeviceBlockEntity#requestStatic}.
  */
 public record SetStaticIpPacket(BlockPos pos, int ip0, int ip1, int ip2, int ip3) implements CustomPacketPayload {
 
@@ -47,11 +47,11 @@ public record SetStaticIpPacket(BlockPos pos, int ip0, int ip1, int ip2, int ip3
             }
 
             BlockEntity be = serverPlayer.level().getBlockEntity(pos);
-            if (be instanceof TerminalBlockEntity terminal) {
-                boolean ok = terminal.requestStatic(
+            if (be instanceof AbstractNetworkDeviceBlockEntity device) {
+                boolean ok = device.requestStatic(
                         new IPAddress(packet.ip0(), packet.ip1(), packet.ip2(), packet.ip3()));
-                CreateFrogportNetworks.LOGGER.info("Terminal at {} static IP request: {}", pos,
-                        ok ? "ok " + terminal.getIpAddress() : "rejected (subnet/taken/no router)");
+                CreateFrogportNetworks.LOGGER.info("Device at {} static IP request: {}", pos,
+                        ok ? "ok " + device.getIpAddress() : "rejected (subnet/taken/no router)");
             }
         });
     }

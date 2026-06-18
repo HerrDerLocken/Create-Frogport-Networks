@@ -1,6 +1,45 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "__comment": "Gehäuse mit zentralem 6x6-Tunnel entlang Y. Der ShaftRenderer rendert die rotierende Welle hindurch; das Blockstate dreht das Modell so, dass der Tunnel auf der Rotationsachse liegt.",
   "textures": {
-    "all": "frogportnetworks:block/router"
-  }
+    "all": "frogportnetworks:block/router",
+    "particle": "frogportnetworks:block/router"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 5],
+      "faces": {
+        "north": {"texture": "#all"}, "south": {"texture": "#all"},
+        "east": {"texture": "#all"}, "west": {"texture": "#all"},
+        "up": {"texture": "#all"}, "down": {"texture": "#all"}
+      }
+    },
+    {
+      "from": [0, 0, 11],
+      "to": [16, 16, 16],
+      "faces": {
+        "north": {"texture": "#all"}, "south": {"texture": "#all"},
+        "east": {"texture": "#all"}, "west": {"texture": "#all"},
+        "up": {"texture": "#all"}, "down": {"texture": "#all"}
+      }
+    },
+    {
+      "from": [0, 0, 5],
+      "to": [5, 16, 11],
+      "faces": {
+        "north": {"texture": "#all"}, "south": {"texture": "#all"},
+        "east": {"texture": "#all"}, "west": {"texture": "#all"},
+        "up": {"texture": "#all"}, "down": {"texture": "#all"}
+      }
+    },
+    {
+      "from": [11, 0, 5],
+      "to": [16, 16, 11],
+      "faces": {
+        "north": {"texture": "#all"}, "south": {"texture": "#all"},
+        "east": {"texture": "#all"}, "west": {"texture": "#all"},
+        "up": {"texture": "#all"}, "down": {"texture": "#all"}
+      }
+    }
+  ]
 }

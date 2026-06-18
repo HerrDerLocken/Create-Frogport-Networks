@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "create:brass_sheet"
+    },
+    "O": {
+      "item": "minecraft:ender_pearl"
+    },
+    "E": {
+      "item": "create:electron_tube"
+    },
+    "P": {
+      "item": "create:precision_mechanism"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "pattern": [
+    "BOB",
+    "EPE",
+    "BRB"
+  ],
+  "result": {
+    "count": 1,
+    "id": "frogportnetworks:network_bridge"
+  }
+}

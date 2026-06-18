@@ -1,7 +1,8 @@
 {
   "variants": {
-    "": {
-      "model": "frogportnetworks:block/terminal"
-    }
+    "facing=north": { "model": "frogportnetworks:block/terminal" },
+    "facing=east":  { "model": "frogportnetworks:block/terminal", "y": 90 },
+    "facing=south": { "model": "frogportnetworks:block/terminal", "y": 180 },
+    "facing=west":  { "model": "frogportnetworks:block/terminal", "y": 270 }
   }
 }

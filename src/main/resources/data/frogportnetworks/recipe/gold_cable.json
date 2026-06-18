@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "W": {
+      "tag": "minecraft:wool"
+    }
+  },
+  "pattern": [
+    "WWW",
+    "GGG",
+    "WWW"
+  ],
+  "result": {
+    "count": 8,
+    "id": "frogportnetworks:gold_cable"
+  }
+}

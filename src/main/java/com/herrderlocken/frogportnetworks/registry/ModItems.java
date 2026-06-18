@@ -2,7 +2,9 @@ package com.herrderlocken.frogportnetworks.registry;
 
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
 import com.herrderlocken.frogportnetworks.item.CableBlockItem;
+import com.herrderlocken.frogportnetworks.item.StorageDiskItem;
 import com.herrderlocken.frogportnetworks.network.CableType;
+import com.herrderlocken.frogportnetworks.storage.DiskTier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -39,6 +41,32 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> TERMINAL_ITEM =
             CreateFrogportNetworks.ITEMS.registerSimpleBlockItem("terminal", ModBlocks.TERMINAL);
+
+    public static final DeferredItem<BlockItem> NETWORK_PORT_ITEM =
+            CreateFrogportNetworks.ITEMS.registerSimpleBlockItem("network_port", ModBlocks.NETWORK_PORT);
+
+    public static final DeferredItem<BlockItem> NETWORK_MONITOR_ITEM =
+            CreateFrogportNetworks.ITEMS.registerSimpleBlockItem("network_monitor", ModBlocks.NETWORK_MONITOR);
+
+    public static final DeferredItem<BlockItem> NETWORK_BRIDGE_ITEM =
+            CreateFrogportNetworks.ITEMS.registerSimpleBlockItem("network_bridge", ModBlocks.NETWORK_BRIDGE);
+
+    public static final DeferredItem<BlockItem> NETWORK_GATEWAY_ITEM =
+            CreateFrogportNetworks.ITEMS.registerSimpleBlockItem("network_gateway", ModBlocks.NETWORK_GATEWAY);
+
+    /** Speicher-Disks (AE2-artig): in ein NAS-Laufwerk gesteckt stellen sie Kapazität bereit. */
+    public static final DeferredItem<StorageDiskItem> DISK_16K =
+            CreateFrogportNetworks.ITEMS.registerItem("storage_disk_16k",
+                    props -> new StorageDiskItem(props, DiskTier.K16));
+    public static final DeferredItem<StorageDiskItem> DISK_64K =
+            CreateFrogportNetworks.ITEMS.registerItem("storage_disk_64k",
+                    props -> new StorageDiskItem(props, DiskTier.K64));
+    public static final DeferredItem<StorageDiskItem> DISK_256K =
+            CreateFrogportNetworks.ITEMS.registerItem("storage_disk_256k",
+                    props -> new StorageDiskItem(props, DiskTier.K256));
+    public static final DeferredItem<StorageDiskItem> DISK_1M =
+            CreateFrogportNetworks.ITEMS.registerItem("storage_disk_1m",
+                    props -> new StorageDiskItem(props, DiskTier.M1));
 
     /** Baut einen Standard-Kabel-ItemStack des passenden Typs. */
     public static ItemStack cableStack(CableType type, int count) {

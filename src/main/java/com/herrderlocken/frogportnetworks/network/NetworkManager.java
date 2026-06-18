@@ -2,6 +2,8 @@ package com.herrderlocken.frogportnetworks.network;
 
 import com.herrderlocken.frogportnetworks.block.NASBlock;
 import com.herrderlocken.frogportnetworks.block.NetworkCableBlock;
+import com.herrderlocken.frogportnetworks.block.NetworkGatewayBlock;
+import com.herrderlocken.frogportnetworks.block.NetworkPortBlock;
 import com.herrderlocken.frogportnetworks.block.RouterBlock;
 import com.herrderlocken.frogportnetworks.block.TerminalBlock;
 import com.herrderlocken.frogportnetworks.blockentity.NetworkCableBlockEntity;
@@ -58,6 +60,11 @@ public class NetworkManager {
 
     public static boolean isIPTaken(IPAddress ip) {
         return ipToPos.containsKey(ip);
+    }
+
+    /** Alle aktuell registrierten Geräte-Positionen (für die globale Übersicht). */
+    public static Set<BlockPos> allDevicePositions() {
+        return new HashSet<>(posToIp.keySet());
     }
 
     /**
@@ -166,7 +173,8 @@ public class NetworkManager {
 
     private static boolean isDevice(Level level, BlockPos pos) {
         Block block = level.getBlockState(pos).getBlock();
-        return block instanceof RouterBlock || block instanceof NASBlock || block instanceof TerminalBlock;
+        return block instanceof RouterBlock || block instanceof NASBlock || block instanceof TerminalBlock
+                || block instanceof NetworkPortBlock || block instanceof NetworkGatewayBlock;
     }
 
     /** Räumt alle Registrierungen auf (z.B. beim Server-Stop). */

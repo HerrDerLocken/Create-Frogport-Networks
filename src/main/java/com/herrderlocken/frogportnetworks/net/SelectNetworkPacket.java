@@ -1,7 +1,7 @@
 package com.herrderlocken.frogportnetworks.net;
 
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
-import com.herrderlocken.frogportnetworks.blockentity.TerminalBlockEntity;
+import com.herrderlocken.frogportnetworks.blockentity.AbstractNetworkDeviceBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -41,8 +41,8 @@ public record SelectNetworkPacket(BlockPos pos, int colorId) implements CustomPa
             if (packet.colorId() < 0 || packet.colorId() > 15) return;
 
             BlockEntity be = serverPlayer.level().getBlockEntity(pos);
-            if (be instanceof TerminalBlockEntity terminal) {
-                terminal.selectNetwork(DyeColor.byId(packet.colorId()));
+            if (be instanceof AbstractNetworkDeviceBlockEntity device) {
+                device.selectNetwork(DyeColor.byId(packet.colorId()));
             }
         });
     }

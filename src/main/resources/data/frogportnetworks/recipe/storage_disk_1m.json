@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "Q": {
+      "item": "create:polished_rose_quartz"
+    },
+    "D": {
+      "item": "frogportnetworks:storage_disk_256k"
+    },
+    "N": {
+      "item": "minecraft:netherite_block"
+    }
+  },
+  "pattern": [
+    "NQN",
+    "DDD",
+    "NQN"
+  ],
+  "result": {
+    "count": 1,
+    "id": "frogportnetworks:storage_disk_1m"
+  }
+}

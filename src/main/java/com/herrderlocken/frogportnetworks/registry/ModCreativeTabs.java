@@ -25,6 +25,14 @@ public class ModCreativeTabs {
                                 output.accept(ModItems.FIBER_CABLE.get());
                                 output.accept(ModItems.NAS_ITEM.get());
                                 output.accept(ModItems.TERMINAL_ITEM.get());
+                                output.accept(ModItems.NETWORK_PORT_ITEM.get());
+                                output.accept(ModItems.NETWORK_MONITOR_ITEM.get());
+                                output.accept(ModItems.NETWORK_BRIDGE_ITEM.get());
+                                output.accept(ModItems.NETWORK_GATEWAY_ITEM.get());
+                                output.accept(ModItems.DISK_16K.get());
+                                output.accept(ModItems.DISK_64K.get());
+                                output.accept(ModItems.DISK_256K.get());
+                                output.accept(ModItems.DISK_1M.get());
                             })
                             .build());
 

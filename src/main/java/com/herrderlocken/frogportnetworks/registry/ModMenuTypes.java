@@ -1,6 +1,10 @@
 package com.herrderlocken.frogportnetworks.registry;
 
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
+import com.herrderlocken.frogportnetworks.menu.NASMenu;
+import com.herrderlocken.frogportnetworks.menu.NetworkPortMenu;
+import com.herrderlocken.frogportnetworks.menu.NetworkMonitorMenu;
+import com.herrderlocken.frogportnetworks.menu.NetworkBridgeMenu;
 import com.herrderlocken.frogportnetworks.menu.RouterMenu;
 import com.herrderlocken.frogportnetworks.menu.TerminalMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -32,6 +36,22 @@ public class ModMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<TerminalMenu>> TERMINAL_MENU =
             MENUS.register("terminal_menu",
                     () -> IMenuTypeExtension.create(TerminalMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<NASMenu>> NAS_MENU =
+            MENUS.register("nas_menu",
+                    () -> IMenuTypeExtension.create(NASMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<NetworkPortMenu>> NETWORK_PORT_MENU =
+            MENUS.register("network_port_menu",
+                    () -> IMenuTypeExtension.create(NetworkPortMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<NetworkMonitorMenu>> NETWORK_MONITOR_MENU =
+            MENUS.register("network_monitor_menu",
+                    () -> IMenuTypeExtension.create(NetworkMonitorMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<NetworkBridgeMenu>> NETWORK_BRIDGE_MENU =
+            MENUS.register("network_bridge_menu",
+                    () -> IMenuTypeExtension.create(NetworkBridgeMenu::new));
 
     public static void register() {}
 }

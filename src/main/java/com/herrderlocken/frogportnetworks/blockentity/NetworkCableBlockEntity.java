@@ -102,9 +102,29 @@ public class NetworkCableBlockEntity extends BlockEntity {
         return null;
     }
 
-    /** Bahn-Index (0..3) einer Farbe. */
+    /**
+     * Bahn-Index (0..3) einer Farbe IN DIESEM BLOCK.
+     *
+     * Bevorzugt wird die feste Bahn {@code id % 4} (damit eine Farbe in jedem Block
+     * auf derselben Bahn liegt → durchgängige Stränge). Würden zwei Stränge dieselbe
+     * Bahn belegen, weicht der mit der höheren Id deterministisch auf die nächste freie
+     * Bahn aus. So überlagern sich nie zwei Stränge (kein "verschwundener" Strang), und
+     * die niedrigste Id (z.B. Weiß) behält immer ihre Wunschbahn.
+     */
     public int getLane(DyeColor color) {
-        return color.getId() % LANE_POS.length;
+        int n = LANE_POS.length;
+        boolean[] used = new boolean[n];
+        for (DyeColor c : segments.keySet()) { // EnumMap iteriert in Id-Reihenfolge
+            int lane = c.getId() % n;
+            if (used[lane]) {
+                for (int i = 0; i < n; i++) {
+                    if (!used[i]) { lane = i; break; }
+                }
+            }
+            used[lane] = true;
+            if (c == color) return lane;
+        }
+        return color.getId() % n; // Farbe nicht vorhanden → Wunschbahn
     }
 
     /**

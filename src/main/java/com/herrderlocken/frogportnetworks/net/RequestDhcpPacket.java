@@ -1,7 +1,7 @@
 package com.herrderlocken.frogportnetworks.net;
 
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
-import com.herrderlocken.frogportnetworks.blockentity.TerminalBlockEntity;
+import com.herrderlocken.frogportnetworks.blockentity.AbstractNetworkDeviceBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -36,10 +36,10 @@ public record RequestDhcpPacket(BlockPos pos) implements CustomPacketPayload {
             if (serverPlayer.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 64.0) return;
 
             BlockEntity be = serverPlayer.level().getBlockEntity(pos);
-            if (be instanceof TerminalBlockEntity terminal) {
-                boolean ok = terminal.requestDhcp();
-                CreateFrogportNetworks.LOGGER.info("Terminal at {} DHCP request: {}", pos,
-                        ok ? "connected " + terminal.getIpAddress() : "no router found");
+            if (be instanceof AbstractNetworkDeviceBlockEntity device) {
+                boolean ok = device.requestDhcp();
+                CreateFrogportNetworks.LOGGER.info("Device at {} DHCP request: {}", pos,
+                        ok ? "connected " + device.getIpAddress() : "no router found");
             }
         });
     }

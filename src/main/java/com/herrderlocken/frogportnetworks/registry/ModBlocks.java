@@ -4,6 +4,10 @@ import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
 import com.herrderlocken.frogportnetworks.block.RouterBlock;
 import com.herrderlocken.frogportnetworks.block.NetworkCableBlock;
 import com.herrderlocken.frogportnetworks.block.NASBlock;
+import com.herrderlocken.frogportnetworks.block.NetworkPortBlock;
+import com.herrderlocken.frogportnetworks.block.NetworkMonitorBlock;
+import com.herrderlocken.frogportnetworks.block.NetworkBridgeBlock;
+import com.herrderlocken.frogportnetworks.block.NetworkGatewayBlock;
 import com.herrderlocken.frogportnetworks.block.TerminalBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -41,6 +45,38 @@ public class ModBlocks {
     public static final DeferredBlock<NASBlock> NAS =
             CreateFrogportNetworks.BLOCKS.register("nas",
                     () -> new NASBlock(BlockBehaviour.Properties.of()
+                            .destroyTime(2.0f)
+                            .explosionResistance(6.0f)
+                            .sound(SoundType.METAL)
+                            .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<NetworkPortBlock> NETWORK_PORT =
+            CreateFrogportNetworks.BLOCKS.register("network_port",
+                    () -> new NetworkPortBlock(BlockBehaviour.Properties.of()
+                            .destroyTime(2.0f)
+                            .explosionResistance(6.0f)
+                            .sound(SoundType.METAL)
+                            .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<NetworkMonitorBlock> NETWORK_MONITOR =
+            CreateFrogportNetworks.BLOCKS.register("network_monitor",
+                    () -> new NetworkMonitorBlock(BlockBehaviour.Properties.of()
+                            .destroyTime(2.0f)
+                            .explosionResistance(6.0f)
+                            .sound(SoundType.METAL)
+                            .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<NetworkBridgeBlock> NETWORK_BRIDGE =
+            CreateFrogportNetworks.BLOCKS.register("network_bridge",
+                    () -> new NetworkBridgeBlock(BlockBehaviour.Properties.of()
+                            .destroyTime(2.0f)
+                            .explosionResistance(6.0f)
+                            .sound(SoundType.METAL)
+                            .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<NetworkGatewayBlock> NETWORK_GATEWAY =
+            CreateFrogportNetworks.BLOCKS.register("network_gateway",
+                    () -> new NetworkGatewayBlock(BlockBehaviour.Properties.of()
                             .destroyTime(2.0f)
                             .explosionResistance(6.0f)
                             .sound(SoundType.METAL)

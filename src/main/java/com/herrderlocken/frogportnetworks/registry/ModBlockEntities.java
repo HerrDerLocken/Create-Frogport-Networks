@@ -4,6 +4,9 @@ import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
 import com.herrderlocken.frogportnetworks.blockentity.RouterBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.NASBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.NetworkCableBlockEntity;
+import com.herrderlocken.frogportnetworks.blockentity.NetworkPortBlockEntity;
+import com.herrderlocken.frogportnetworks.blockentity.NetworkMonitorBlockEntity;
+import com.herrderlocken.frogportnetworks.blockentity.NetworkBridgeBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.TerminalBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -42,6 +45,21 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("network_cable",
                     () -> BlockEntityType.Builder.of(NetworkCableBlockEntity::new,
                             ModBlocks.NETWORK_CABLE.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<NetworkPortBlockEntity>> NETWORK_PORT =
+            BLOCK_ENTITIES.register("network_port",
+                    () -> BlockEntityType.Builder.of(NetworkPortBlockEntity::new,
+                            ModBlocks.NETWORK_PORT.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<NetworkMonitorBlockEntity>> NETWORK_MONITOR =
+            BLOCK_ENTITIES.register("network_monitor",
+                    () -> BlockEntityType.Builder.of(NetworkMonitorBlockEntity::new,
+                            ModBlocks.NETWORK_MONITOR.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<NetworkBridgeBlockEntity>> NETWORK_BRIDGE =
+            BLOCK_ENTITIES.register("network_bridge",
+                    () -> BlockEntityType.Builder.of(NetworkBridgeBlockEntity::new,
+                            ModBlocks.NETWORK_BRIDGE.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TerminalBlockEntity>> TERMINAL =
             BLOCK_ENTITIES.register("terminal",

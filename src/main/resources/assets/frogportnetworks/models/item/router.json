@@ -1,3 +1,6 @@
 {
-  "parent": "frogportnetworks:block/router"
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "frogportnetworks:block/router"
+  }
 }

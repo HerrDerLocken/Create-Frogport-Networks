@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "create:copper_sheet"
+    },
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "E": {
+      "item": "create:electron_tube"
+    },
+    "O": {
+      "item": "minecraft:ender_pearl"
+    },
+    "B": {
+      "item": "create:brass_sheet"
+    }
+  },
+  "pattern": [
+    "CGC",
+    "EOE",
+    "CBC"
+  ],
+  "result": {
+    "count": 1,
+    "id": "frogportnetworks:network_monitor"
+  }
+}

@@ -185,6 +185,8 @@ public class NetworkCableBlock extends BaseEntityBlock {
         return state.getBlock() instanceof NetworkCableBlock
                 || state.getBlock() instanceof RouterBlock
                 || state.getBlock() instanceof NASBlock
-                || state.getBlock() instanceof TerminalBlock;
+                || state.getBlock() instanceof TerminalBlock
+                || state.getBlock() instanceof NetworkPortBlock
+                || state.getBlock() instanceof NetworkGatewayBlock;
     }
 }

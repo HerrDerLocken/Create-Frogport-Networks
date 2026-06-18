@@ -1,6 +1,7 @@
 package com.herrderlocken.frogportnetworks;
 
 import com.mojang.logging.LogUtils;
+import com.simibubi.create.api.packager.unpacking.UnpackingHandler;
 import com.herrderlocken.frogportnetworks.block.NetworkCableBlock;
 import com.herrderlocken.frogportnetworks.blockentity.NetworkCableBlockEntity;
 import com.herrderlocken.frogportnetworks.registry.ModBlockEntities;
@@ -20,6 +21,8 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -41,6 +44,7 @@ public class CreateFrogportNetworks {
 
     public CreateFrogportNetworks(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::registerCapabilities);
 
         // Alle DeferredRegister am Mod-Event-Bus anmelden
         BLOCKS.register(modEventBus);
@@ -66,6 +70,19 @@ public class CreateFrogportNetworks {
 
     private void commonSetup(FMLCommonSetupEvent event) {
         LOGGER.info("Frogport Networks loaded.");
+        // Eigener Unpacking-Handler: Pakete (Frogport/Packager) landen direkt im Netz-Speicher,
+        // statt an Creates slot-basierter Standardlogik zu scheitern (Multi-Stack/Multi-Typ-Importe).
+        event.enqueueWork(() -> UnpackingHandler.REGISTRY.register(
+                ModBlocks.NETWORK_PORT.get(),
+                new com.herrderlocken.frogportnetworks.blockentity.NetworkPortUnpackingHandler()));
+    }
+
+    /** Macht den Netz-Speicher des Network Ports für Automation (Funnel/Trichter/Chute) zugänglich. */
+    private void registerCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.NETWORK_PORT.get(),
+                (be, side) -> be.getItemHandler());
     }
 
     @SubscribeEvent

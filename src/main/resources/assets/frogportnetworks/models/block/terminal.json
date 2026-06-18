@@ -1,6 +1,12 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube",
   "textures": {
-    "all": "frogportnetworks:block/terminal"
+    "particle": "frogportnetworks:block/terminal",
+    "north": "frogportnetworks:block/terminal",
+    "south": "frogportnetworks:block/casing_side",
+    "east": "frogportnetworks:block/casing_side",
+    "west": "frogportnetworks:block/casing_side",
+    "up": "frogportnetworks:block/casing_top",
+    "down": "frogportnetworks:block/casing_top"
   }
 }
