@@ -7,6 +7,7 @@ import com.herrderlocken.frogportnetworks.storage.DiskEntry;
 import com.herrderlocken.frogportnetworks.storage.NetworkStorage;
 import com.herrderlocken.frogportnetworks.storage.StorageSnapshot;
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
+import com.simibubi.create.foundation.utility.CreateLang;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -177,20 +178,16 @@ public class NetworkPortBlockEntity extends AbstractNetworkDeviceBlockEntity
 
     @Override
     public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
-        tooltip.add(Component.translatable("gui.frogportnetworks.network_port")
-                .withStyle(ChatFormatting.WHITE));
+        CreateLang.translate("gui.frogportnetworks.network_port").forGoggles(tooltip);
         if (connected && ipAddress != null) {
-            tooltip.add(Component.literal(" ")
-                    .append(Component.translatable("goggles.frogportnetworks.ip", ipAddress.toString()))
-                    .withStyle(ChatFormatting.GRAY));
-            tooltip.add(Component.literal(" ")
-                    .append(Component.translatable("goggles.frogportnetworks.mode",
-                            Component.translatable("gui.frogportnetworks.mode." + mode.name().toLowerCase())))
-                    .withStyle(ChatFormatting.GRAY));
+            CreateLang.translate("goggles.frogportnetworks.ip", ipAddress.toString())
+                    .style(ChatFormatting.GRAY).forGoggles(tooltip);
+            CreateLang.translate("goggles.frogportnetworks.mode",
+                            Component.translatable("gui.frogportnetworks.mode." + mode.name().toLowerCase()))
+                    .style(ChatFormatting.GRAY).forGoggles(tooltip);
         } else {
-            tooltip.add(Component.literal(" ")
-                    .append(Component.translatable("goggles.frogportnetworks.disconnected"))
-                    .withStyle(ChatFormatting.RED));
+            CreateLang.translate("goggles.frogportnetworks.disconnected")
+                    .style(ChatFormatting.RED).forGoggles(tooltip);
         }
         return true;
     }
@@ -229,8 +226,8 @@ public class NetworkPortBlockEntity extends AbstractNetworkDeviceBlockEntity
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         this.mode = Mode.byId(tag.getInt("mode"));
-        filter.clear();
-        for (int i = 0; i < FILTER_SLOTS; i++) filter.add(ItemStack.EMPTY);
+        // filter ist eine fixed-size NonNullList → nur set(), kein clear()/add()!
+        for (int i = 0; i < FILTER_SLOTS; i++) filter.set(i, ItemStack.EMPTY);
         if (tag.contains("filter")) {
             ContainerHelper.loadAllItems(tag.getCompound("filter"), filter, registries);
         }

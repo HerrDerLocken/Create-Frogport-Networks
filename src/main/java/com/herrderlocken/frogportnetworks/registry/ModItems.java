@@ -2,6 +2,8 @@ package com.herrderlocken.frogportnetworks.registry;
 
 import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
 import com.herrderlocken.frogportnetworks.item.CableBlockItem;
+import com.herrderlocken.frogportnetworks.item.ComputerUpgrade;
+import com.herrderlocken.frogportnetworks.item.ComputerUpgradeItem;
 import com.herrderlocken.frogportnetworks.item.StorageDiskItem;
 import com.herrderlocken.frogportnetworks.network.CableType;
 import com.herrderlocken.frogportnetworks.storage.DiskTier;
@@ -53,6 +55,29 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> NETWORK_GATEWAY_ITEM =
             CreateFrogportNetworks.ITEMS.registerSimpleBlockItem("network_gateway", ModBlocks.NETWORK_GATEWAY);
+
+    public static final DeferredItem<BlockItem> COMPUTER_ITEM =
+            CreateFrogportNetworks.ITEMS.registerSimpleBlockItem("computer", ModBlocks.COMPUTER);
+
+    /** Computer-Upgrades (in die Upgrade-Slots des Computers). */
+    public static final DeferredItem<ComputerUpgradeItem> AI_CHIP =
+            CreateFrogportNetworks.ITEMS.registerItem("ai_chip", p -> new ComputerUpgradeItem(p, ComputerUpgrade.AI));
+    public static final DeferredItem<ComputerUpgradeItem> MIXING_UPGRADE =
+            CreateFrogportNetworks.ITEMS.registerItem("mixing_upgrade", p -> new ComputerUpgradeItem(p, ComputerUpgrade.MIXING));
+    public static final DeferredItem<ComputerUpgradeItem> PRESSING_UPGRADE =
+            CreateFrogportNetworks.ITEMS.registerItem("pressing_upgrade", p -> new ComputerUpgradeItem(p, ComputerUpgrade.PRESSING));
+    public static final DeferredItem<ComputerUpgradeItem> DEPLOYING_UPGRADE =
+            CreateFrogportNetworks.ITEMS.registerItem("deploying_upgrade", p -> new ComputerUpgradeItem(p, ComputerUpgrade.DEPLOYING));
+    public static final DeferredItem<ComputerUpgradeItem> MILLING_UPGRADE =
+            CreateFrogportNetworks.ITEMS.registerItem("milling_upgrade", p -> new ComputerUpgradeItem(p, ComputerUpgrade.MILLING));
+    public static final DeferredItem<ComputerUpgradeItem> HAUNTING_UPGRADE =
+            CreateFrogportNetworks.ITEMS.registerItem("haunting_upgrade", p -> new ComputerUpgradeItem(p, ComputerUpgrade.HAUNTING));
+    public static final DeferredItem<ComputerUpgradeItem> SMELTING_UPGRADE =
+            CreateFrogportNetworks.ITEMS.registerItem("smelting_upgrade", p -> new ComputerUpgradeItem(p, ComputerUpgrade.SMELTING));
+    public static final DeferredItem<ComputerUpgradeItem> SMOKING_UPGRADE =
+            CreateFrogportNetworks.ITEMS.registerItem("smoking_upgrade", p -> new ComputerUpgradeItem(p, ComputerUpgrade.SMOKING));
+    public static final DeferredItem<ComputerUpgradeItem> WASHING_UPGRADE =
+            CreateFrogportNetworks.ITEMS.registerItem("washing_upgrade", p -> new ComputerUpgradeItem(p, ComputerUpgrade.WASHING));
 
     /** Speicher-Disks (AE2-artig): in ein NAS-Laufwerk gesteckt stellen sie Kapazität bereit. */
     public static final DeferredItem<StorageDiskItem> DISK_16K =

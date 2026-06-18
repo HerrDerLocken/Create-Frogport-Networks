@@ -1,5 +1,6 @@
 package com.herrderlocken.frogportnetworks.network;
 
+import com.herrderlocken.frogportnetworks.block.ComputerBlock;
 import com.herrderlocken.frogportnetworks.block.NASBlock;
 import com.herrderlocken.frogportnetworks.block.NetworkCableBlock;
 import com.herrderlocken.frogportnetworks.block.NetworkGatewayBlock;
@@ -174,7 +175,8 @@ public class NetworkManager {
     private static boolean isDevice(Level level, BlockPos pos) {
         Block block = level.getBlockState(pos).getBlock();
         return block instanceof RouterBlock || block instanceof NASBlock || block instanceof TerminalBlock
-                || block instanceof NetworkPortBlock || block instanceof NetworkGatewayBlock;
+                || block instanceof NetworkPortBlock || block instanceof NetworkGatewayBlock
+                || block instanceof ComputerBlock;
     }
 
     /** Räumt alle Registrierungen auf (z.B. beim Server-Stop). */

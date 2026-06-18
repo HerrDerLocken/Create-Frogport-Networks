@@ -114,6 +114,34 @@ public class ModNetworking {
                 UpdateBridgePacket.STREAM_CODEC,
                 UpdateBridgePacket::handle
         );
+
+        // Client → Server: gewählten Terminal-Tab (Scope) fürs Einlagern setzen
+        registrar.playToServer(
+                SelectScopePacket.TYPE,
+                SelectScopePacket.STREAM_CODEC,
+                SelectScopePacket::handle
+        );
+
+        // Client → Server: Crafting anfordern (Terminal → Computer)
+        registrar.playToServer(
+                CraftRequestPacket.TYPE,
+                CraftRequestPacket.STREAM_CODEC,
+                CraftRequestPacket::handle
+        );
+
+        // Client → Server: craftbare Items anfordern (Terminal-Index)
+        registrar.playToServer(
+                RequestCraftablesPacket.TYPE,
+                RequestCraftablesPacket.STREAM_CODEC,
+                RequestCraftablesPacket::handle
+        );
+
+        // Server → Client: craftbare Items fürs Terminal
+        registrar.playToClient(
+                CraftablesPacket.TYPE,
+                CraftablesPacket.STREAM_CODEC,
+                CraftablesPacket::handle
+        );
     }
 
     /** Schickt einem Spieler den aktuellen Speicher-Inhalt für die offene GUI. */
@@ -124,5 +152,10 @@ public class ModNetworking {
     /** Schickt einem Spieler die netzweite Geräteliste fürs Terminal. */
     public static void sendNetworkSnapshot(ServerPlayer player, BlockPos pos, List<DeviceSnapshot> devices) {
         PacketDistributor.sendToPlayer(player, new NetworkSnapshotPacket(pos, devices));
+    }
+
+    /** Schickt einem Spieler die craftbaren Items fürs Terminal. */
+    public static void sendCraftables(ServerPlayer player, BlockPos pos, List<net.minecraft.world.item.ItemStack> items) {
+        PacketDistributor.sendToPlayer(player, new CraftablesPacket(pos, items));
     }
 }

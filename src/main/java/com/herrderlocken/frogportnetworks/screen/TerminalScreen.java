@@ -2,9 +2,12 @@ package com.herrderlocken.frogportnetworks.screen;
 
 import com.herrderlocken.frogportnetworks.client.StorageBrowser;
 import com.herrderlocken.frogportnetworks.menu.TerminalMenu;
+import com.herrderlocken.frogportnetworks.net.CraftRequestPacket;
+import com.herrderlocken.frogportnetworks.net.RequestCraftablesPacket;
 import com.herrderlocken.frogportnetworks.net.RequestDhcpPacket;
 import com.herrderlocken.frogportnetworks.net.RequestNetworkSnapshotPacket;
 import com.herrderlocken.frogportnetworks.net.SelectNetworkPacket;
+import com.herrderlocken.frogportnetworks.net.SelectScopePacket;
 import com.herrderlocken.frogportnetworks.net.SetStaticIpPacket;
 import com.herrderlocken.frogportnetworks.net.WithdrawItemPacket;
 import com.herrderlocken.frogportnetworks.storage.DeviceSnapshot;
@@ -22,6 +25,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
@@ -33,7 +37,7 @@ import java.util.List;
  * die Tab-Leiste, das scrollbare Inhalts-Raster ({@link StorageBrowser}) und das
  * Spieler-Inventar. Entnehmen aus dem gewählten Scope, Einlagern (Shift-Klick) ins Netz.
  */
-public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> implements NetworkStorageHost {
+public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> implements NetworkStorageHost, CraftablesHost {
 
     private static final int COLOR_TITLE = 0xFFFFD79A;
     private static final int COLOR_LABEL = 0xFFB8B6C8;
@@ -68,6 +72,13 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     private int tabOffset;
     private long capUsed, capMax;
     private int reqTimer;
+
+    // Craftbar-Index + Craft-Auswahl
+    private List<ItemStack> craftables = new ArrayList<>();
+    private ItemStack craftTarget = ItemStack.EMPTY;
+    private ScrollInput craftAmount;
+    private Label craftAmountLabel;
+    private IconButton craftConfirm;
 
     // pro Frame berechnete Tab-Trefferflächen (für Klicks)
     private final List<int[]> tabRects = new ArrayList<>(); // {x, w, tabIndex}
@@ -133,7 +144,55 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
             addRenderableWidget(netLabel);
         }
 
+        // Craft-Auswahl-Widgets (versteckt bis ein Item per Rechtsklick gewählt wird)
+        int promptY = y + TerminalMenu.BROWSER_Y - 15;
+        craftAmountLabel = new Label(x + 78, promptY + 3, Component.empty()).withShadow().colored(COLOR_VALUE);
+        craftAmount = new ScrollInput(x + 72, promptY, 44, 12)
+                .withRange(1, 1025)
+                .format(v -> Component.literal("x" + v))
+                .titled(Component.literal("Craft amount"))
+                .writingTo(craftAmountLabel);
+        craftAmount.setState(1);
+        craftAmount.onChanged();
+        craftConfirm = new IconButton(x + 122, promptY - 2, AllIcons.I_CONFIRM);
+        craftConfirm.withCallback(this::confirmCraft);
+        craftConfirm.setToolTip(Component.literal("Send craft request to a Computer"));
+        addRenderableWidget(craftAmount);
+        addRenderableWidget(craftAmountLabel);
+        addRenderableWidget(craftConfirm);
+        hideCraftPrompt();
+
         requestSnapshot();
+        requestCraftables();
+    }
+
+    private void selectCraft(ItemStack item) {
+        craftTarget = item.copyWithCount(1);
+        craftAmount.setState(1);
+        craftAmount.onChanged();
+        setCraftPromptVisible(true);
+    }
+
+    private void hideCraftPrompt() {
+        craftTarget = ItemStack.EMPTY;
+        setCraftPromptVisible(false);
+    }
+
+    private void setCraftPromptVisible(boolean v) {
+        if (craftAmount != null) { craftAmount.visible = v; craftAmount.active = v; }
+        if (craftAmountLabel != null) craftAmountLabel.visible = v;
+        if (craftConfirm != null) { craftConfirm.visible = v; craftConfirm.active = v; }
+    }
+
+    private void confirmCraft() {
+        if (craftTarget.isEmpty()) return;
+        PacketDistributor.sendToServer(
+                new CraftRequestPacket(menu.getBlockPos(), craftTarget.copyWithCount(1), craftAmount.getState()));
+        hideCraftPrompt();
+    }
+
+    private void requestCraftables() {
+        PacketDistributor.sendToServer(new RequestCraftablesPacket(menu.getBlockPos()));
     }
 
     private void applyStatic() {
@@ -147,6 +206,11 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
         PacketDistributor.sendToServer(new RequestNetworkSnapshotPacket(menu.getBlockPos()));
     }
 
+    /** Teilt dem Server den gewählten Tab mit (Einlagern geht dann gezielt dorthin). */
+    private void sendScope() {
+        PacketDistributor.sendToServer(new SelectScopePacket(scopePos()));
+    }
+
     @Override
     public BlockPos networkPos() { return menu.getBlockPos(); }
 
@@ -154,6 +218,16 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     public void onNetworkSnapshot(List<DeviceSnapshot> devices) {
         this.devices = devices;
         if (selectedTab > devices.size()) selectedTab = 0;
+        refreshBrowser();
+        sendScope();
+    }
+
+    @Override
+    public BlockPos craftablesPos() { return menu.getBlockPos(); }
+
+    @Override
+    public void onCraftables(List<ItemStack> items) {
+        this.craftables = items;
         refreshBrowser();
     }
 
@@ -173,6 +247,16 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
             capUsed = d.snapshot().usedItems();
             capMax = d.snapshot().maxItems();
             entries.addAll(d.snapshot().entries());
+        }
+        // Craftbar-Index (nur im "All"-Tab): craftbare, aber nicht vorrätige Items mit count 0 anhängen.
+        if (selectedTab == 0) {
+            for (ItemStack c : craftables) {
+                boolean present = false;
+                for (DiskEntry e : entries) {
+                    if (net.minecraft.world.item.ItemStack.isSameItem(e.item(), c)) { present = true; break; }
+                }
+                if (!present) entries.add(new DiskEntry(c.copyWithCount(1), 0));
+            }
         }
         browser.setEntries(entries);
     }
@@ -196,6 +280,7 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     protected void containerTick() {
         super.containerTick();
         if (++reqTimer % 10 == 0) requestSnapshot();
+        if (reqTimer % 40 == 0) requestCraftables();
     }
 
     private int browserX() { return leftPos + TerminalMenu.BROWSER_X; }
@@ -241,10 +326,17 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
 
         renderTabs(g);
 
-        // Kapazität rechts über dem Browser
-        String cap = StorageBrowser.fmt(capUsed) + " / " + StorageBrowser.fmt(capMax) + " items";
-        g.drawString(font, cap, x + TerminalMenu.WINDOW_W - 12 - font.width(cap),
-                y + TerminalMenu.BROWSER_Y - 10, COLOR_DIM, false);
+        if (craftTarget.isEmpty()) {
+            // Kapazität rechts über dem Browser
+            String cap = StorageBrowser.fmt(capUsed) + " / " + StorageBrowser.fmt(capMax) + " items";
+            g.drawString(font, cap, x + TerminalMenu.WINDOW_W - 12 - font.width(cap),
+                    y + TerminalMenu.BROWSER_Y - 10, COLOR_DIM, false);
+        } else {
+            // Craft-Auswahl: Label + gewähltes Item (Mengen-Eingabe/Button sind Widgets)
+            int promptY = y + TerminalMenu.BROWSER_Y - 15;
+            g.drawString(font, "Craft", x + 12, promptY + 3, COLOR_TITLE, false);
+            g.renderItem(craftTarget, x + 44, promptY - 1);
+        }
 
         for (Slot s : menu.slots) {
             slot(g, x + s.x - 1, y + s.y - 1, TerminalMenu.SLOT, TerminalMenu.SLOT);
@@ -323,8 +415,13 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
         DiskEntry hovered = browser.entryAt(browserX(), browserY(), mouseX, mouseY);
         if (hovered != null) {
             List<Component> lines = new ArrayList<>(getTooltipFromItem(minecraft, hovered.item()));
-            lines.add(Component.literal(StorageBrowser.fmt(hovered.count()) + " stored")
-                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+            if (hovered.count() > 0) {
+                lines.add(Component.literal(StorageBrowser.fmt(hovered.count()) + " stored")
+                        .withStyle(net.minecraft.ChatFormatting.GRAY));
+            }
+            lines.add(Component.literal(hovered.count() > 0
+                    ? "Right-click: craft" : "Craftable — right-click to craft")
+                    .withStyle(net.minecraft.ChatFormatting.AQUA));
             g.renderComponentTooltip(font, lines, mouseX, mouseY);
         }
     }
@@ -345,20 +442,36 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
                     && my < topPos + TerminalMenu.TABS_Y + TAB_H) {
                 selectedTab = r[2];
                 refreshBrowser();
+                sendScope();
                 return true;
             }
         }
 
-        // Browser-Entnahme
+        // Browser: Rechtsklick = Craft-Auswahl (Menge wählen + senden); Links = 1, Shift+Links = Stack.
         DiskEntry e = browser.entryAt(browserX(), browserY(), mx, my);
         if (e != null) {
-            int amount = button == 1 ? 1 : e.item().getMaxStackSize();
-            PacketDistributor.sendToServer(new WithdrawItemPacket(scopePos(), e.item().copyWithCount(1), amount));
-            requestSnapshot();
+            if (button == 1) {
+                selectCraft(e.item());
+                return true;
+            }
+            if (e.count() > 0) { // vorrätig → entnehmen
+                int amount = hasShiftDown() ? e.item().getMaxStackSize() : 1;
+                PacketDistributor.sendToServer(new WithdrawItemPacket(scopePos(), e.item().copyWithCount(1), amount));
+                requestSnapshot();
+            }
             return true;
         }
         if (browser.inside(browserX(), browserY(), mx, my)) return true;
-        return super.mouseClicked(mx, my, button);
+
+        // Create-Widgets (Octets, DHCP, Net-Selektor, Craft-Auswahl) zuletzt.
+        if (super.mouseClicked(mx, my, button)) return true;
+
+        // Klick ins Leere schließt eine offene Craft-Auswahl.
+        if (!craftTarget.isEmpty()) {
+            hideCraftPrompt();
+            return true;
+        }
+        return false;
     }
 
     private static boolean hit(int[] r, double mx, double my) {

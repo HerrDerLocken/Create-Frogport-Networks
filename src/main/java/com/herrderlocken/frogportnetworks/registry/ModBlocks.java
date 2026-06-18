@@ -8,6 +8,7 @@ import com.herrderlocken.frogportnetworks.block.NetworkPortBlock;
 import com.herrderlocken.frogportnetworks.block.NetworkMonitorBlock;
 import com.herrderlocken.frogportnetworks.block.NetworkBridgeBlock;
 import com.herrderlocken.frogportnetworks.block.NetworkGatewayBlock;
+import com.herrderlocken.frogportnetworks.block.ComputerBlock;
 import com.herrderlocken.frogportnetworks.block.TerminalBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -78,6 +79,14 @@ public class ModBlocks {
             CreateFrogportNetworks.BLOCKS.register("network_gateway",
                     () -> new NetworkGatewayBlock(BlockBehaviour.Properties.of()
                             .destroyTime(2.0f)
+                            .explosionResistance(6.0f)
+                            .sound(SoundType.METAL)
+                            .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<ComputerBlock> COMPUTER =
+            CreateFrogportNetworks.BLOCKS.register("computer",
+                    () -> new ComputerBlock(BlockBehaviour.Properties.of()
+                            .destroyTime(2.5f)
                             .explosionResistance(6.0f)
                             .sound(SoundType.METAL)
                             .requiresCorrectToolForDrops()));

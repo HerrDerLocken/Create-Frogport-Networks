@@ -5,6 +5,7 @@ import com.herrderlocken.frogportnetworks.menu.NASMenu;
 import com.herrderlocken.frogportnetworks.menu.NetworkPortMenu;
 import com.herrderlocken.frogportnetworks.menu.NetworkMonitorMenu;
 import com.herrderlocken.frogportnetworks.menu.NetworkBridgeMenu;
+import com.herrderlocken.frogportnetworks.menu.ComputerMenu;
 import com.herrderlocken.frogportnetworks.menu.RouterMenu;
 import com.herrderlocken.frogportnetworks.menu.TerminalMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -52,6 +53,10 @@ public class ModMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<NetworkBridgeMenu>> NETWORK_BRIDGE_MENU =
             MENUS.register("network_bridge_menu",
                     () -> IMenuTypeExtension.create(NetworkBridgeMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<ComputerMenu>> COMPUTER_MENU =
+            MENUS.register("computer_menu",
+                    () -> IMenuTypeExtension.create(ComputerMenu::new));
 
     public static void register() {}
 }

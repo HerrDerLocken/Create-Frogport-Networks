@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=y": { "model": "frogportnetworks:block/computer" },
+    "axis=z": { "model": "frogportnetworks:block/computer", "x": 90 },
+    "axis=x": { "model": "frogportnetworks:block/computer", "x": 90, "y": 90 }
+  }
+}

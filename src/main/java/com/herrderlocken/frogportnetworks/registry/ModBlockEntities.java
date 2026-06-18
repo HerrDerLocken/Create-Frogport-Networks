@@ -7,6 +7,7 @@ import com.herrderlocken.frogportnetworks.blockentity.NetworkCableBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.NetworkPortBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.NetworkMonitorBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.NetworkBridgeBlockEntity;
+import com.herrderlocken.frogportnetworks.blockentity.ComputerBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.TerminalBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -60,6 +61,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("network_bridge",
                     () -> BlockEntityType.Builder.of(NetworkBridgeBlockEntity::new,
                             ModBlocks.NETWORK_BRIDGE.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ComputerBlockEntity>> COMPUTER =
+            BLOCK_ENTITIES.register("computer",
+                    () -> BlockEntityType.Builder.of(ComputerBlockEntity::new,
+                            ModBlocks.COMPUTER.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TerminalBlockEntity>> TERMINAL =
             BLOCK_ENTITIES.register("terminal",

@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "N": {
+    "Q": {
       "item": "minecraft:quartz"
     },
     "R": {

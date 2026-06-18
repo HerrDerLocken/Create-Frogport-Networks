@@ -10,6 +10,7 @@ import com.herrderlocken.frogportnetworks.screen.NASScreen;
 import com.herrderlocken.frogportnetworks.screen.NetworkPortScreen;
 import com.herrderlocken.frogportnetworks.screen.NetworkMonitorScreen;
 import com.herrderlocken.frogportnetworks.screen.NetworkBridgeScreen;
+import com.herrderlocken.frogportnetworks.screen.ComputerScreen;
 import com.herrderlocken.frogportnetworks.screen.RouterScreen;
 import com.herrderlocken.frogportnetworks.screen.TerminalScreen;
 import net.neoforged.api.distmarker.Dist;
@@ -55,6 +56,7 @@ public class CreateFrogportNetworksClient {
         event.register(ModMenuTypes.NETWORK_PORT_MENU.get(), NetworkPortScreen::new);
         event.register(ModMenuTypes.NETWORK_MONITOR_MENU.get(), NetworkMonitorScreen::new);
         event.register(ModMenuTypes.NETWORK_BRIDGE_MENU.get(), NetworkBridgeScreen::new);
+        event.register(ModMenuTypes.COMPUTER_MENU.get(), ComputerScreen::new);
     }
 
     @SubscribeEvent

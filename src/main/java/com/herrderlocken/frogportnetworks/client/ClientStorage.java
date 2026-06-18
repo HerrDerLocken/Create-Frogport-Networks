@@ -1,11 +1,13 @@
 package com.herrderlocken.frogportnetworks.client;
 
+import com.herrderlocken.frogportnetworks.screen.CraftablesHost;
 import com.herrderlocken.frogportnetworks.screen.NetworkStorageHost;
 import com.herrderlocken.frogportnetworks.screen.StorageHost;
 import com.herrderlocken.frogportnetworks.storage.DeviceSnapshot;
 import com.herrderlocken.frogportnetworks.storage.StorageSnapshot;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 
@@ -26,6 +28,12 @@ public final class ClientStorage {
     public static void applyNetworkSnapshot(BlockPos pos, List<DeviceSnapshot> devices) {
         if (Minecraft.getInstance().screen instanceof NetworkStorageHost host && pos.equals(host.networkPos())) {
             host.onNetworkSnapshot(devices);
+        }
+    }
+
+    public static void applyCraftables(BlockPos pos, List<ItemStack> items) {
+        if (Minecraft.getInstance().screen instanceof CraftablesHost host && pos.equals(host.craftablesPos())) {
+            host.onCraftables(items);
         }
     }
 }

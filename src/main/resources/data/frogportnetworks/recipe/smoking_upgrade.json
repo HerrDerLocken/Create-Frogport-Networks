@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "E": {
+      "item": "create:electron_tube"
+    },
+    "P": {
+      "item": "create:precision_mechanism"
+    },
+    "B": {
+      "item": "create:brass_casing"
+    },
+    "M": {
+      "item": "create:encased_fan"
+    },
+    "X": {
+      "item": "minecraft:campfire"
+    }
+  },
+  "pattern": [
+    "EPE",
+    "BMB",
+    "EXE"
+  ],
+  "result": {
+    "count": 1,
+    "id": "frogportnetworks:smoking_upgrade"
+  }
+}

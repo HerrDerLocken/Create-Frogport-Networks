@@ -20,6 +20,8 @@ public class StorageBrowser {
     private static final int TRACK       = 0x40FFFFFF;
     private static final int KNOB        = 0xFFD8D6E4;
     private static final int COUNT_COLOR = 0xFFFFFFFF;
+    /** Hintergrund für craftbare (count==0) Einträge im Terminal-Index. */
+    private static final int CRAFTABLE_BG = 0x553A6CC8;
 
     public final int cols;
     public final int rows;
@@ -73,8 +75,11 @@ public class StorageBrowser {
                 int index = (scroll + row) * cols + col;
                 if (index < entries.size()) {
                     DiskEntry e = entries.get(index);
+                    if (e.count() <= 0) {
+                        g.fill(cx + 1, cy + 1, cx + SLOT - 1, cy + SLOT - 1, CRAFTABLE_BG); // craftbar
+                    }
                     g.renderItem(e.item(), cx + 1, cy + 1);
-                    drawCount(g, font, e.count(), cx + 1, cy + 1);
+                    if (e.count() > 0) drawCount(g, font, e.count(), cx + 1, cy + 1);
                 }
             }
         }

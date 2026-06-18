@@ -29,6 +29,16 @@ public class ModCreativeTabs {
                                 output.accept(ModItems.NETWORK_MONITOR_ITEM.get());
                                 output.accept(ModItems.NETWORK_BRIDGE_ITEM.get());
                                 output.accept(ModItems.NETWORK_GATEWAY_ITEM.get());
+                                output.accept(ModItems.COMPUTER_ITEM.get());
+                                output.accept(ModItems.AI_CHIP.get());
+                                output.accept(ModItems.MIXING_UPGRADE.get());
+                                output.accept(ModItems.PRESSING_UPGRADE.get());
+                                output.accept(ModItems.DEPLOYING_UPGRADE.get());
+                                output.accept(ModItems.MILLING_UPGRADE.get());
+                                output.accept(ModItems.HAUNTING_UPGRADE.get());
+                                output.accept(ModItems.SMELTING_UPGRADE.get());
+                                output.accept(ModItems.SMOKING_UPGRADE.get());
+                                output.accept(ModItems.WASHING_UPGRADE.get());
                                 output.accept(ModItems.DISK_16K.get());
                                 output.accept(ModItems.DISK_64K.get());
                                 output.accept(ModItems.DISK_256K.get());

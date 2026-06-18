@@ -216,7 +216,8 @@ public class NASScreen extends AbstractSimiContainerScreen<NASMenu> implements S
     public boolean mouseClicked(double mx, double my, int button) {
         DiskEntry e = browser.entryAt(browserX(), browserY(), mx, my);
         if (e != null) {
-            int amount = button == 1 ? 1 : e.item().getMaxStackSize();
+            // Links = 1, Shift+Links = Stack, Rechts = Stack
+            int amount = (button == 0 && !hasShiftDown()) ? 1 : e.item().getMaxStackSize();
             PacketDistributor.sendToServer(new WithdrawItemPacket(menu.getBlockPos(), e.item().copyWithCount(1), amount));
             return true;
         }

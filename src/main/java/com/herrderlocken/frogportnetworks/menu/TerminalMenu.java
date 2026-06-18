@@ -40,12 +40,18 @@ public class TerminalMenu extends AbstractContainerMenu {
     private final BlockPos blockPos;
     /** Serverseitige Speicherquelle (null auf dem Client). */
     private final NetworkStorage storage;
+    /** Serverseitiges Terminal (für Level-Zugriff beim gezielten Einlagern); null auf Client. */
+    private final TerminalBlockEntity terminalEntity;
+    /** Gewählter Tab: Terminal-Pos = "All" (Aggregat), sonst die Ziel-NAS-Pos. */
+    private BlockPos targetScope;
 
     // Server-Konstruktor
     public TerminalMenu(int containerId, Inventory playerInv, TerminalBlockEntity entity) {
         super(ModMenuTypes.TERMINAL_MENU.get(), containerId);
         this.blockPos = entity.getBlockPos();
         this.storage = entity;
+        this.terminalEntity = entity;
+        this.targetScope = entity.getBlockPos();
 
         this.data = new ContainerData() {
             @Override
@@ -82,6 +88,8 @@ public class TerminalMenu extends AbstractContainerMenu {
         for (int i = 0; i < DATA_SIZE; i++) seeded.set(i, extraData.readVarInt());
         this.data = seeded;
         this.storage = null;
+        this.terminalEntity = null;
+        this.targetScope = this.blockPos;
 
         layout(playerInv);
         addDataSlots(this.data);
@@ -124,6 +132,19 @@ public class TerminalMenu extends AbstractContainerMenu {
 
     public BlockPos getBlockPos() { return blockPos; }
 
+    /** Vom {@link com.herrderlocken.frogportnetworks.net.SelectScopePacket} gesetzt. */
+    public void setTargetScope(BlockPos scope) { this.targetScope = scope; }
+
+    /** Ziel-Speicher für Einlagerung: bestimmtes NAS (Tab) oder das Aggregat ("All"). */
+    private NetworkStorage depositTarget() {
+        if (terminalEntity != null && targetScope != null && !targetScope.equals(blockPos)
+                && terminalEntity.getLevel() != null
+                && terminalEntity.getLevel().getBlockEntity(targetScope) instanceof NetworkStorage ns) {
+            return ns;
+        }
+        return storage;
+    }
+
     @Override
     public boolean stillValid(Player player) {
         return player.distanceToSqr(blockPos.getX() + 0.5, blockPos.getY() + 0.5, blockPos.getZ() + 0.5) <= 64.0;
@@ -137,7 +158,7 @@ public class TerminalMenu extends AbstractContainerMenu {
         // Alle Slots sind Spieler-Slots → Item ins Netz einlagern (nur serverseitig).
         if (storage == null) return ItemStack.EMPTY;
         ItemStack stack = slot.getItem();
-        long inserted = storage.insert(stack, stack.getCount(), false);
+        long inserted = depositTarget().insert(stack, stack.getCount(), false);
         if (inserted <= 0) return ItemStack.EMPTY;
         stack.shrink((int) inserted);
         if (stack.isEmpty()) slot.set(ItemStack.EMPTY); else slot.setChanged();

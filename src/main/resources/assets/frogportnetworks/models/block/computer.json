@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "frogportnetworks:block/computer_end",
+    "side": "frogportnetworks:block/computer"
+  }
+}
