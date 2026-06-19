@@ -4,7 +4,7 @@ license="MIT (code) / All Rights Reserved (assets)"
 
 [[mods]]
 modId="frogportnetworks"
-version="0.1.1"
+version="1.0.0"
 displayName="Frogport Networks"
 description='''A Create addon that adds IP networking to Minecraft.'''
 
