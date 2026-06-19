@@ -19,9 +19,11 @@ import com.simibubi.create.foundation.gui.widget.IconButton;
 import com.simibubi.create.foundation.gui.widget.Label;
 import com.simibubi.create.foundation.gui.widget.ScrollInput;
 import com.simibubi.create.foundation.gui.widget.SelectionScrollInput;
+import com.herrderlocken.frogportnetworks.compat.jei.JeiBridge;
 import net.createmod.catnip.gui.element.BoxElement;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -108,6 +110,11 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     private final List<int[]> tabRects = new ArrayList<>(); // {x, w, tabIndex}
     private int[] arrowLeft, arrowRight;
 
+    // Optionale JEI-Integration: nur ansprechen, wenn JEI installiert ist (sonst wird
+    // JeiBridge nie geladen → keine harte Abhängigkeit).
+    private static final boolean JEI_LOADED = net.neoforged.fml.ModList.get().isLoaded("jei");
+    private boolean syncingSearch; // verhindert Rückkopplung beim Spiegeln der Suchtexte
+
     public TerminalScreen(TerminalMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
         this.browser = new StorageBrowser(TerminalMenu.BROWSER_COLS, menu.getBrowserRows());
@@ -174,7 +181,10 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
         search = new EditBox(font, x + TerminalMenu.GRID_X + 1, ctrlY, 80, 12, Component.literal("Search"));
         search.setBordered(true);
         search.setHint(Component.literal("Search…"));
-        search.setResponder(s -> refreshBrowser());
+        search.setResponder(s -> {
+            refreshBrowser();
+            if (JEI_LOADED && !syncingSearch) JeiBridge.pushSearch(s);
+        });
         addRenderableWidget(search);
 
         Label sortLabel = new Label(x + 108, ctrlY + 2, Component.empty()).withShadow().colored(COLOR_VALUE);
@@ -494,6 +504,15 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
         super.containerTick();
         if (++reqTimer % 10 == 0) requestSnapshot();
         if (reqTimer % 40 == 0) requestCraftables();
+        // JEI-Suche → Terminal-Suche spiegeln (Tippen in der JEI-Leiste filtert auch hier).
+        if (JEI_LOADED && search != null) {
+            String f = JeiBridge.pullSearch();
+            if (f != null && !f.equals(search.getValue())) {
+                syncingSearch = true;
+                search.setValue(f);
+                syncingSearch = false;
+            }
+        }
     }
 
     private int browserX() { return leftPos + TerminalMenu.BROWSER_X; }
@@ -786,5 +805,33 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    // === JEI-Integration (von FrogportJeiPlugin aufgerufen; nur Vanilla-Typen) ===
+
+    /** Gesamtfläche des Browser-Rasters – Ziel-Zone fürs Ablegen von JEI-Items. */
+    public Rect2i jeiBrowserArea() {
+        return new Rect2i(browserX(), browserY(),
+                browser.cols * StorageBrowser.SLOT, browser.rows * StorageBrowser.SLOT);
+    }
+
+    /** Das Item unter dem Cursor im Browser (für JEI Rezept/Verwendung), oder null. */
+    public ItemStack jeiStackAt(double mx, double my) {
+        DiskEntry e = browser.entryAt(browserX(), browserY(), mx, my);
+        return e == null ? null : e.item();
+    }
+
+    /** Rechteck der Browser-Zelle unter dem Cursor (für JEI-Highlight), oder null. */
+    public Rect2i jeiCellAt(double mx, double my) {
+        int ox = browserX(), oy = browserY(), s = StorageBrowser.SLOT;
+        if (mx < ox || my < oy || mx >= ox + browser.cols * s || my >= oy + browser.rows * s) return null;
+        int col = (int) ((mx - ox) / s);
+        int row = (int) ((my - oy) / s);
+        return new Rect2i(ox + col * s, oy + row * s, s, s);
+    }
+
+    /** Reiht ein aus JEI gezogenes Item in die Craft-Queue ein. */
+    public void jeiEnqueue(ItemStack stack) {
+        if (stack != null && !stack.isEmpty()) enqueueCraft(stack.copyWithCount(1));
     }
 }

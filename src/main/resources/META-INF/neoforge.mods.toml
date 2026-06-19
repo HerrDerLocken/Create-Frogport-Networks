@@ -4,7 +4,7 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="frogportnetworks"
-version="0.1.0"
+version="0.1.1"
 displayName="Frogport Networks"
 description='''A Create addon that adds IP networking to Minecraft.'''
 
@@ -28,3 +28,10 @@ type="required"
 versionRange="[6.0.10,6.1.0)"
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.frogportnetworks]]
+modId="jei"
+type="optional"
+versionRange="[19.0.0,)"
+ordering="AFTER"
+side="CLIENT"
