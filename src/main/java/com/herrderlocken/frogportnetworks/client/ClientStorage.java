@@ -36,4 +36,11 @@ public final class ClientStorage {
             host.onCraftables(items);
         }
     }
+
+    public static void applyCraftPlan(BlockPos pos, ItemStack proto, boolean ok, List<ItemStack> consumed,
+                                      List<ItemStack> crafted, List<ItemStack> missing, int maxCrafts) {
+        if (Minecraft.getInstance().screen instanceof CraftablesHost host && pos.equals(host.craftablesPos())) {
+            host.onCraftPlan(proto, ok, consumed, crafted, missing, maxCrafts);
+        }
+    }
 }

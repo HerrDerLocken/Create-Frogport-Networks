@@ -75,7 +75,7 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     private ItemSorting.Sort sortMode = ItemSorting.Sort.COUNT_DESC;
     private ItemSorting.GroupBy groupMode = ItemSorting.GroupBy.NONE;
 
-    private final StorageBrowser browser = new StorageBrowser(TerminalMenu.BROWSER_COLS, TerminalMenu.BROWSER_ROWS);
+    private final StorageBrowser browser;
     private List<DeviceSnapshot> devices = new ArrayList<>();
     private int selectedTab; // 0 = All, sonst Gerät devices[tab-1]
     private int tabOffset;
@@ -86,6 +86,12 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     private List<ItemStack> craftables = new ArrayList<>();
     /** Item → Ausbeute pro Craft (z.B. Sticks = 4), aus dem Craftbar-Paket. */
     private final java.util.Map<net.minecraft.world.item.Item, Integer> craftYield = new java.util.HashMap<>();
+
+    // Craft-Aufschlüsselung (Hover-Tooltip): pro Item angefragt + gecacht
+    private record PlanData(boolean ok, List<ItemStack> consumed, List<ItemStack> crafted,
+                            List<ItemStack> missing, int maxCrafts) {}
+    private final java.util.Map<net.minecraft.world.item.Item, PlanData> planCache = new java.util.HashMap<>();
+    private final java.util.Set<net.minecraft.world.item.Item> planRequested = new java.util.HashSet<>();
 
     // Craft-Warteschlange (mehrere Rezepte werden gesammelt und gemeinsam losgeschickt)
     private static final int QUEUE_MAX = 6;
@@ -104,6 +110,7 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
 
     public TerminalScreen(TerminalMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
+        this.browser = new StorageBrowser(TerminalMenu.BROWSER_COLS, menu.getBrowserRows());
     }
 
     @Override
@@ -234,6 +241,7 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
         if (queueItems.size() >= QUEUE_MAX) return;
         queueItems.add(item.copyWithCount(1));
         queueAmounts.add(1);
+        requestPlan(item); // für Mengen-Limit + Bedarfsanzeige
         selectQueueEntry(queueItems.size() - 1);
     }
 
@@ -242,6 +250,7 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
         if (index >= 0 && index < queueAmounts.size()) {
             craftAmount.setState(queueAmounts.get(index));
             craftAmount.onChanged();
+            applyCraftAmountLimit();
         }
         updateCraftWidgets();
     }
@@ -321,12 +330,94 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
         for (ItemStack it : items) {
             if (!it.isEmpty()) craftYield.put(it.getItem(), Math.max(1, it.getCount()));
         }
+        // Aufschlüsselungen verfallen lassen (Bestand kann sich geändert haben).
+        planCache.clear();
+        planRequested.clear();
         refreshBrowser();
+    }
+
+    @Override
+    public void onCraftPlan(ItemStack proto, boolean ok, List<ItemStack> consumed, List<ItemStack> crafted,
+                            List<ItemStack> missing, int maxCrafts) {
+        planCache.put(proto.getItem(), new PlanData(ok, consumed, crafted, missing, maxCrafts));
+        // Wenn der gerade gewählte Queue-Eintrag betroffen ist: Mengen-Limit anwenden.
+        if (queueSel >= 0 && queueSel < queueItems.size()
+                && queueItems.get(queueSel).getItem() == proto.getItem()) {
+            applyCraftAmountLimit();
+        }
+    }
+
+    /** Begrenzt den Mengen-Regler des gewählten Eintrags auf das craftbare Maximum (laut Plan). */
+    private void applyCraftAmountLimit() {
+        if (craftAmount == null || queueSel < 0 || queueSel >= queueItems.size()) return;
+        PlanData pd = planCache.get(queueItems.get(queueSel).getItem());
+        int max = (pd != null && pd.ok()) ? Math.max(1, pd.maxCrafts()) : 1024;
+        craftAmount.withRange(1, max + 1); // max ist exklusiv
+        int clamped = Math.min(craftAmount.getState(), max);
+        craftAmount.setState(clamped);
+        craftAmount.onChanged();
+        if (queueSel < queueAmounts.size()) queueAmounts.set(queueSel, clamped);
+    }
+
+    /** Fordert die Craft-Aufschlüsselung für ein Item an (einmal pro Cache-Zyklus). */
+    private void requestPlan(ItemStack item) {
+        if (planRequested.add(item.getItem())) {
+            PacketDistributor.sendToServer(new com.herrderlocken.frogportnetworks.net.RequestCraftPlanPacket(
+                    menu.getBlockPos(), item.copyWithCount(1)));
+        }
     }
 
     /** Ausbeute pro Craft für ein Item (Standard 1). */
     private int yieldOf(ItemStack stack) {
         return craftYield.getOrDefault(stack.getItem(), 1);
+    }
+
+    /** Hängt die Craft-Aufschlüsselung (Verbrauch/Vorstufen bzw. Bedarf+Fehlendes) an einen Tooltip an. */
+    private void appendPlanLines(List<Component> lines, ItemStack item, boolean flagged) {
+        PlanData pd = planCache.get(item.getItem());
+        if (pd == null) {
+            if (flagged) lines.add(Component.literal("Calculating…").withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+            return;
+        }
+        if (pd.ok()) {
+            if (!pd.consumed().isEmpty()) {
+                lines.add(Component.literal("Uses from network:").withStyle(net.minecraft.ChatFormatting.GOLD));
+                for (ItemStack c : pd.consumed()) lines.add(planLine(c, net.minecraft.ChatFormatting.GRAY, ""));
+            }
+            if (!pd.crafted().isEmpty()) {
+                lines.add(Component.literal("Crafts on the way:").withStyle(net.minecraft.ChatFormatting.GOLD));
+                for (ItemStack c : pd.crafted()) lines.add(planLine(c, net.minecraft.ChatFormatting.DARK_GRAY, ""));
+            }
+            return;
+        }
+        // Nicht machbar: nächstbestes Rezept + fehlende Zutaten zeigen.
+        if (pd.consumed().isEmpty()) return; // gar kein Rezept → nichts anzeigen
+        java.util.Set<net.minecraft.world.item.Item> miss = new java.util.HashSet<>();
+        for (ItemStack m : pd.missing()) miss.add(m.getItem());
+        lines.add(Component.literal("Recipe needs:").withStyle(net.minecraft.ChatFormatting.GOLD));
+        for (ItemStack c : pd.consumed()) {
+            boolean m = miss.contains(c.getItem());
+            lines.add(planLine(c, m ? net.minecraft.ChatFormatting.RED : net.minecraft.ChatFormatting.GRAY,
+                    m ? " (missing)" : ""));
+        }
+    }
+
+    /** Zeigt den GESAMT-Rohstoffbedarf eines Queue-Eintrags (Bedarf pro Craft × Anzahl Crafts). */
+    private void appendTotalNeeds(List<Component> lines, ItemStack item, int crafts) {
+        PlanData pd = planCache.get(item.getItem());
+        if (pd == null || !pd.ok() || pd.consumed().isEmpty()) return;
+        lines.add(Component.literal("Total needs:").withStyle(net.minecraft.ChatFormatting.GOLD));
+        for (ItemStack c : pd.consumed()) {
+            lines.add(Component.literal(" " + ((long) c.getCount() * crafts) + "x ")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY)
+                    .append(c.getHoverName().copy().withStyle(net.minecraft.ChatFormatting.GRAY)));
+        }
+    }
+
+    private Component planLine(ItemStack c, net.minecraft.ChatFormatting color, String suffix) {
+        return Component.literal(" " + c.getCount() + "x ").withStyle(color)
+                .append(c.getHoverName().copy().withStyle(color))
+                .append(Component.literal(suffix).withStyle(color));
     }
 
     /** Befüllt den Browser je nach gewähltem Tab (All = aggregiert). */
@@ -579,6 +670,7 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
                     ? "x" + crafts + " crafts → " + ((long) crafts * yield) + " items"
                     : "Queued: x" + crafts)
                     .withStyle(net.minecraft.ChatFormatting.GRAY));
+            appendTotalNeeds(lines, queueItems.get(qi), crafts);
             lines.add(Component.literal("Left: select · Right: remove")
                     .withStyle(net.minecraft.ChatFormatting.AQUA));
             g.renderComponentTooltip(font, lines, mouseX, mouseY);
@@ -601,6 +693,10 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
                 lines.add(Component.literal("Yields " + yield + " per craft")
                         .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
             }
+            // Craft-Aufschlüsselung: was wird verbraucht / mitgecraftet bzw. was fehlt
+            requestPlan(hovered.item());
+            boolean flagged = hovered.count() == 0 || craftYield.containsKey(hovered.item().getItem());
+            appendPlanLines(lines, hovered.item(), flagged);
             g.renderComponentTooltip(font, lines, mouseX, mouseY);
         }
     }

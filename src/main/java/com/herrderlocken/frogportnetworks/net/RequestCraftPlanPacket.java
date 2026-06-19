@@ -4,58 +4,58 @@ import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
 import com.herrderlocken.frogportnetworks.blockentity.ComputerBlockEntity;
 import com.herrderlocken.frogportnetworks.blockentity.TerminalBlockEntity;
 import com.herrderlocken.frogportnetworks.craft.CraftEngine;
+import com.herrderlocken.frogportnetworks.item.ComputerUpgrade;
 import com.herrderlocken.frogportnetworks.network.RoutingManager;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.List;
-
 /**
- * RequestCraftablesPacket — Client → Server: das Terminal will die Liste der GERADE craftbaren
- * Items (für den Craftbar-Index). Wird nur befüllt, wenn ein Computer erreichbar ist.
+ * RequestCraftPlanPacket — Client → Server: das Terminal will wissen, was das Craften von
+ * {@code proto} verbrauchen/herstellen würde (für den Hover-Tooltip). Wird über den erreichbaren
+ * Computer (dessen Upgrades) berechnet und als {@link CraftPlanPacket} zurückgeschickt.
  */
-public record RequestCraftablesPacket(BlockPos terminalPos) implements CustomPacketPayload {
+public record RequestCraftPlanPacket(BlockPos terminalPos, ItemStack proto) implements CustomPacketPayload {
 
-    public static final Type<RequestCraftablesPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(CreateFrogportNetworks.MODID, "request_craftables"));
+    public static final Type<RequestCraftPlanPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(CreateFrogportNetworks.MODID, "request_craft_plan"));
 
-    public static final StreamCodec<FriendlyByteBuf, RequestCraftablesPacket> STREAM_CODEC =
-            StreamCodec.of((buf, p) -> buf.writeBlockPos(p.terminalPos()),
-                    buf -> new RequestCraftablesPacket(buf.readBlockPos()));
+    public static final StreamCodec<RegistryFriendlyByteBuf, RequestCraftPlanPacket> STREAM_CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC, RequestCraftPlanPacket::terminalPos,
+            ItemStack.STREAM_CODEC, RequestCraftPlanPacket::proto,
+            RequestCraftPlanPacket::new);
 
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(RequestCraftablesPacket packet, IPayloadContext context) {
+    public static void handle(RequestCraftPlanPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
             BlockPos pos = packet.terminalPos();
             if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 64.0) return;
+            if (packet.proto().isEmpty()) return;
+
             BlockEntity be = player.level().getBlockEntity(pos);
             if (!(be instanceof TerminalBlockEntity terminal)) return;
 
-            // Ersten erreichbaren Computer wählen; seine Upgrades bestimmen den Index
-            // (KI-Chip → rekursiv; Prozess-Upgrades → Create-Rezepte mit einbeziehen).
             ComputerBlockEntity computer = null;
             for (BlockPos p : RoutingManager.reachableStorages(player.level(), pos, terminal.getNetworkColor())) {
                 if (player.level().getBlockEntity(p) instanceof ComputerBlockEntity c) { computer = c; break; }
             }
-            List<net.minecraft.world.item.ItemStack> craftables;
+            CraftEngine.Plan plan;
             if (computer == null) {
-                craftables = List.of();
+                plan = new CraftEngine.Plan(false, java.util.List.of(), java.util.List.of(), java.util.List.of(), 0);
             } else {
-                var procs = computer.enabledProcesses();
-                craftables = computer.hasUpgrade(com.herrderlocken.frogportnetworks.item.ComputerUpgrade.AI)
-                        ? CraftEngine.craftableResultsRecursive(player.level(), terminal, procs)
-                        : CraftEngine.craftableResults(player.level(), terminal, procs);
+                plan = CraftEngine.planConsumption(player.level(), terminal, packet.proto(),
+                        computer.enabledProcesses(), computer.hasUpgrade(ComputerUpgrade.AI));
             }
-            ModNetworking.sendCraftables(player, pos, craftables);
+            ModNetworking.sendCraftPlan(player, pos, packet.proto(), plan);
         });
     }
 }

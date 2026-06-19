@@ -142,6 +142,20 @@ public class ModNetworking {
                 CraftablesPacket.STREAM_CODEC,
                 CraftablesPacket::handle
         );
+
+        // Client → Server: Craft-Aufschlüsselung anfordern (Hover-Tooltip)
+        registrar.playToServer(
+                RequestCraftPlanPacket.TYPE,
+                RequestCraftPlanPacket.STREAM_CODEC,
+                RequestCraftPlanPacket::handle
+        );
+
+        // Server → Client: Craft-Aufschlüsselung fürs Terminal
+        registrar.playToClient(
+                CraftPlanPacket.TYPE,
+                CraftPlanPacket.STREAM_CODEC,
+                CraftPlanPacket::handle
+        );
     }
 
     /** Schickt einem Spieler den aktuellen Speicher-Inhalt für die offene GUI. */
@@ -157,5 +171,12 @@ public class ModNetworking {
     /** Schickt einem Spieler die craftbaren Items fürs Terminal. */
     public static void sendCraftables(ServerPlayer player, BlockPos pos, List<net.minecraft.world.item.ItemStack> items) {
         PacketDistributor.sendToPlayer(player, new CraftablesPacket(pos, items));
+    }
+
+    /** Schickt einem Spieler die Craft-Aufschlüsselung eines Items. */
+    public static void sendCraftPlan(ServerPlayer player, BlockPos pos, net.minecraft.world.item.ItemStack proto,
+                                     com.herrderlocken.frogportnetworks.craft.CraftEngine.Plan plan) {
+        PacketDistributor.sendToPlayer(player, new CraftPlanPacket(pos, proto, plan.ok(),
+                plan.consumed(), plan.crafted(), plan.missing(), plan.maxCrafts()));
     }
 }

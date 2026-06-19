@@ -32,7 +32,9 @@ public class TerminalMenu extends AbstractContainerMenu {
     public static final int CONTROLS_Y = 84;  // Suche + Sortierung + Gruppierung
     public static final int TABS_Y = 102;
     public static final int BROWSER_COLS = 9;
+    /** Maximale (Vollbild-)Zeilenzahl des Item-Rasters; auf kleinen Fenstern wird verkleinert. */
     public static final int BROWSER_ROWS = 5;
+    public static final int BROWSER_ROWS_MIN = 3;
     public static final int BROWSER_X = GRID_X;
     public static final int BROWSER_Y = 132; // Platz für Controls (84) + Tab-Leiste (102) + Craft/Kapazität
     public static final int PLAYER_GAP = 10;
@@ -45,6 +47,8 @@ public class TerminalMenu extends AbstractContainerMenu {
     private final TerminalBlockEntity terminalEntity;
     /** Gewählter Tab: Terminal-Pos = "All" (Aggregat), sonst die Ziel-NAS-Pos. */
     private BlockPos targetScope;
+    /** Zeilen des Item-Rasters – auf dem Client an die Fensterhöhe angepasst (Server: Maximum). */
+    private final int browserRows;
 
     // Server-Konstruktor
     public TerminalMenu(int containerId, Inventory playerInv, TerminalBlockEntity entity) {
@@ -53,6 +57,7 @@ public class TerminalMenu extends AbstractContainerMenu {
         this.storage = entity;
         this.terminalEntity = entity;
         this.targetScope = entity.getBlockPos();
+        this.browserRows = BROWSER_ROWS;
 
         this.data = new ContainerData() {
             @Override
@@ -91,6 +96,7 @@ public class TerminalMenu extends AbstractContainerMenu {
         this.storage = null;
         this.terminalEntity = null;
         this.targetScope = this.blockPos;
+        this.browserRows = computeBrowserRows();
 
         layout(playerInv);
         addDataSlots(this.data);
@@ -109,7 +115,17 @@ public class TerminalMenu extends AbstractContainerMenu {
         }
     }
 
-    public int getInvY() { return BROWSER_Y + BROWSER_ROWS * SLOT + PLAYER_GAP; }
+    public int getBrowserRows() { return browserRows; }
+
+    public int getInvY() { return BROWSER_Y + browserRows * SLOT + PLAYER_GAP; }
+
+    /** Client: möglichst viele Raster-Zeilen, die noch in die GUI-skalierte Fensterhöhe passen. */
+    private static int computeBrowserRows() {
+        int screenH = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledHeight();
+        int nonRow = BROWSER_Y + PLAYER_GAP + 4 * SLOT + 12; // alles außer den Raster-Zeilen
+        int fit = (screenH - nonRow - 6) / SLOT;             // 6px Rand
+        return Math.max(BROWSER_ROWS_MIN, Math.min(BROWSER_ROWS, fit));
+    }
 
     // === Status-Getter (für den Screen) ===
 

@@ -12,4 +12,6 @@ import java.util.List;
 public interface CraftablesHost {
     BlockPos craftablesPos();
     void onCraftables(List<ItemStack> items);
+    void onCraftPlan(ItemStack proto, boolean ok, List<ItemStack> consumed, List<ItemStack> crafted,
+                     List<ItemStack> missing, int maxCrafts);
 }

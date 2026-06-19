@@ -27,6 +27,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 /**
@@ -90,9 +91,10 @@ public class ComputerBlockEntity extends KineticBlockEntity implements MenuProvi
         progress -= CRAFT_THRESHOLD;
 
         NetworkStorage net = reachableStorage();
+        var procs = enabledProcesses();
         boolean ok = hasUpgrade(ComputerUpgrade.AI)
-                ? CraftEngine.craftOnceRecursive(level, net, craftTarget)  // KI-Chip: Vorstufen mitcraften
-                : CraftEngine.craftOnce(level, net, craftTarget);
+                ? CraftEngine.craftOnceRecursive(level, net, craftTarget, procs)  // KI-Chip: Vorstufen mitcraften
+                : CraftEngine.craftOnce(level, net, craftTarget, procs);
         if (ok) {
             craftRemaining--;
         } else {
@@ -163,6 +165,20 @@ public class ComputerBlockEntity extends KineticBlockEntity implements MenuProvi
     /** Läuft der Computer (dreht sich, nicht überlastet)? */
     public boolean isPowered() {
         return Math.abs(getSpeed()) > 0 && !isOverStressed();
+    }
+
+    /** Aus den gesteckten Upgrades abgeleitete, freigeschaltete Create-/Vanilla-Prozesse. */
+    public EnumSet<CraftEngine.Process> enabledProcesses() {
+        EnumSet<CraftEngine.Process> set = EnumSet.noneOf(CraftEngine.Process.class);
+        if (hasUpgrade(ComputerUpgrade.MIXING)) set.add(CraftEngine.Process.MIXING);
+        if (hasUpgrade(ComputerUpgrade.PRESSING)) set.add(CraftEngine.Process.PRESSING);
+        if (hasUpgrade(ComputerUpgrade.DEPLOYING)) set.add(CraftEngine.Process.DEPLOYING);
+        if (hasUpgrade(ComputerUpgrade.MILLING)) set.add(CraftEngine.Process.MILLING);
+        if (hasUpgrade(ComputerUpgrade.HAUNTING)) set.add(CraftEngine.Process.HAUNTING);
+        if (hasUpgrade(ComputerUpgrade.SMELTING)) set.add(CraftEngine.Process.SMELTING);
+        if (hasUpgrade(ComputerUpgrade.SMOKING)) set.add(CraftEngine.Process.SMOKING);
+        if (hasUpgrade(ComputerUpgrade.WASHING)) set.add(CraftEngine.Process.SPLASHING);
+        return set;
     }
 
     /** Ist ein bestimmtes Upgrade gesteckt? */
