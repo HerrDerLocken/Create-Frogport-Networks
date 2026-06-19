@@ -29,11 +29,12 @@ public class TerminalMenu extends AbstractContainerMenu {
     public static final int WINDOW_W = 200;
     public static final int SLOT = 18;
     public static final int GRID_X = 19;
-    public static final int TABS_Y = 84;
+    public static final int CONTROLS_Y = 84;  // Suche + Sortierung + Gruppierung
+    public static final int TABS_Y = 102;
     public static final int BROWSER_COLS = 9;
     public static final int BROWSER_ROWS = 5;
     public static final int BROWSER_X = GRID_X;
-    public static final int BROWSER_Y = 114; // Platz für Tab-Leiste (84) + Kapazitätszeile
+    public static final int BROWSER_Y = 132; // Platz für Controls (84) + Tab-Leiste (102) + Craft/Kapazität
     public static final int PLAYER_GAP = 10;
 
     private final ContainerData data;

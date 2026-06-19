@@ -42,10 +42,17 @@ public class ComputerBlockEntity extends KineticBlockEntity implements MenuProvi
     /** Fortschritts-Schwelle pro Craft; pro Tick wird die RPM aufaddiert (256 RPM ⇒ 1 Craft/Tick). */
     public static final int CRAFT_THRESHOLD = 256;
 
-    // Aktueller Crafting-Auftrag (transient; nicht persistiert)
+    /** Maximale Anzahl wartender Aufträge in der Warteschlange. */
+    public static final int MAX_QUEUE = 32;
+
+    // Aktueller Crafting-Auftrag + Warteschlange (transient; nicht persistiert)
     private ItemStack craftTarget = ItemStack.EMPTY;
     private int craftRemaining = 0;
     private int progress = 0;
+    private final java.util.ArrayDeque<Job> queue = new java.util.ArrayDeque<>();
+
+    /** Ein wartender Crafting-Auftrag (Ziel-Item + Anzahl). */
+    private record Job(ItemStack target, int amount) {}
 
     private final SimpleContainer upgrades = new SimpleContainer(UPGRADE_SLOTS) {
         @Override
@@ -75,31 +82,61 @@ public class ComputerBlockEntity extends KineticBlockEntity implements MenuProvi
     public void tick() {
         super.tick();
         if (level == null || level.isClientSide) return;
-        if (craftRemaining <= 0 || craftTarget.isEmpty() || !isPowered()) return;
+        if (craftTarget.isEmpty()) pullNext();          // nächsten Auftrag aus der Queue holen
+        if (craftTarget.isEmpty() || !isPowered()) return;
 
         progress += getRpm();
         if (progress < CRAFT_THRESHOLD) return;
         progress -= CRAFT_THRESHOLD;
 
         NetworkStorage net = reachableStorage();
-        if (CraftEngine.craftOnce(level, net, craftTarget)) {
+        boolean ok = hasUpgrade(ComputerUpgrade.AI)
+                ? CraftEngine.craftOnceRecursive(level, net, craftTarget)  // KI-Chip: Vorstufen mitcraften
+                : CraftEngine.craftOnce(level, net, craftTarget);
+        if (ok) {
             craftRemaining--;
         } else {
-            craftRemaining = 0; // Zutaten fehlen / kein Rezept → Auftrag beenden
+            craftRemaining = 0; // Zutaten fehlen / kein Rezept → diesen Auftrag beenden
+        }
+        if (craftRemaining <= 0) finishCurrent();
+        setChanged();
+    }
+
+    /** Beendet den aktuellen Auftrag und zieht ggf. den nächsten nach. */
+    private void finishCurrent() {
+        craftTarget = ItemStack.EMPTY;
+        craftRemaining = 0;
+        progress = 0;
+        pullNext();
+    }
+
+    /** Holt den nächsten wartenden Auftrag (falls vorhanden) als aktiven Auftrag. */
+    private void pullNext() {
+        Job job = queue.poll();
+        if (job != null) {
+            craftTarget = job.target();
+            craftRemaining = job.amount();
+            progress = 0;
+        }
+    }
+
+    /** Nimmt einen Crafting-Auftrag an (vom Terminal). Läuft bereits einer, wird angehängt. */
+    public void requestCraft(ItemStack target, int amount) {
+        if (target.isEmpty() || amount <= 0) return;
+        if (craftTarget.isEmpty()) {
+            this.craftTarget = target.copyWithCount(1);
+            this.craftRemaining = amount;
+            this.progress = 0;
+        } else if (queue.size() < MAX_QUEUE) {
+            queue.add(new Job(target.copyWithCount(1), amount));
         }
         setChanged();
     }
 
-    /** Nimmt einen Crafting-Auftrag an (vom Terminal). */
-    public void requestCraft(ItemStack target, int amount) {
-        if (target.isEmpty() || amount <= 0) return;
-        this.craftTarget = target.copyWithCount(1);
-        this.craftRemaining = amount;
-        this.progress = 0;
-        setChanged();
-    }
+    public boolean isBusy() { return craftRemaining > 0 || !queue.isEmpty(); }
 
-    public boolean isBusy() { return craftRemaining > 0; }
+    /** Anzahl wartender (noch nicht aktiver) Aufträge. */
+    public int getQueueLength() { return queue.size(); }
 
     /** Aggregierter Speicher über alle erreichbaren NAS (multi-hop über Gateways). */
     private NetworkStorage reachableStorage() {

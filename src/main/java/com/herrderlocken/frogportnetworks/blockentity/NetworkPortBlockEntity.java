@@ -6,8 +6,9 @@ import com.herrderlocken.frogportnetworks.registry.ModBlockEntities;
 import com.herrderlocken.frogportnetworks.storage.DiskEntry;
 import com.herrderlocken.frogportnetworks.storage.NetworkStorage;
 import com.herrderlocken.frogportnetworks.storage.StorageSnapshot;
+import com.herrderlocken.frogportnetworks.CreateFrogportNetworks;
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
-import com.simibubi.create.foundation.utility.CreateLang;
+import net.createmod.catnip.lang.LangBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -178,18 +179,25 @@ public class NetworkPortBlockEntity extends AbstractNetworkDeviceBlockEntity
 
     @Override
     public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
-        CreateLang.translate("gui.frogportnetworks.network_port").forGoggles(tooltip);
+        goggleLine(tooltip, Component.translatable("gui.frogportnetworks.network_port"), null);
         if (connected && ipAddress != null) {
-            CreateLang.translate("goggles.frogportnetworks.ip", ipAddress.toString())
-                    .style(ChatFormatting.GRAY).forGoggles(tooltip);
-            CreateLang.translate("goggles.frogportnetworks.mode",
-                            Component.translatable("gui.frogportnetworks.mode." + mode.name().toLowerCase()))
-                    .style(ChatFormatting.GRAY).forGoggles(tooltip);
+            goggleLine(tooltip, Component.translatable("goggles.frogportnetworks.ip", ipAddress.toString()),
+                    ChatFormatting.GRAY);
+            goggleLine(tooltip, Component.translatable("goggles.frogportnetworks.mode",
+                            Component.translatable("gui.frogportnetworks.mode." + mode.name().toLowerCase())),
+                    ChatFormatting.GRAY);
         } else {
-            CreateLang.translate("goggles.frogportnetworks.disconnected")
-                    .style(ChatFormatting.RED).forGoggles(tooltip);
+            goggleLine(tooltip, Component.translatable("goggles.frogportnetworks.disconnected"),
+                    ChatFormatting.RED);
         }
         return true;
+    }
+
+    /** Fügt eine Goggle-Zeile mit korrekter Create-Einrückung hinzu (eigene MODID, nicht "create."). */
+    private static void goggleLine(List<Component> tooltip, Component text, ChatFormatting color) {
+        LangBuilder b = new LangBuilder(CreateFrogportNetworks.MODID).add(text);
+        if (color != null) b.style(color);
+        b.forGoggles(tooltip);
     }
 
     // === Menu ===

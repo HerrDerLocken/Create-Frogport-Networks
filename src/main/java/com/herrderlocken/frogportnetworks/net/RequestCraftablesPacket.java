@@ -41,13 +41,23 @@ public record RequestCraftablesPacket(BlockPos terminalPos) implements CustomPac
             if (!(be instanceof TerminalBlockEntity terminal)) return;
 
             // Nur wenn ein Computer erreichbar ist, lohnt der (teure) Craftbar-Scan.
+            // Hat ein erreichbarer Computer den KI-Chip, wird der rekursive Index verwendet.
             boolean hasComputer = false;
+            boolean hasAI = false;
             for (BlockPos p : RoutingManager.reachableStorages(player.level(), pos, terminal.getNetworkColor())) {
-                if (player.level().getBlockEntity(p) instanceof ComputerBlockEntity) { hasComputer = true; break; }
+                if (player.level().getBlockEntity(p) instanceof ComputerBlockEntity c) {
+                    hasComputer = true;
+                    if (c.hasUpgrade(com.herrderlocken.frogportnetworks.item.ComputerUpgrade.AI)) { hasAI = true; break; }
+                }
             }
-            List<net.minecraft.world.item.ItemStack> craftables = hasComputer
-                    ? CraftEngine.craftableResults(player.level(), terminal)
-                    : List.of();
+            List<net.minecraft.world.item.ItemStack> craftables;
+            if (!hasComputer) {
+                craftables = List.of();
+            } else if (hasAI) {
+                craftables = CraftEngine.craftableResultsRecursive(player.level(), terminal);
+            } else {
+                craftables = CraftEngine.craftableResults(player.level(), terminal);
+            }
             ModNetworking.sendCraftables(player, pos, craftables);
         });
     }

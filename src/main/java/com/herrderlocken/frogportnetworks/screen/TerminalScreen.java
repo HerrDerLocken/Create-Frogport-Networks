@@ -1,5 +1,6 @@
 package com.herrderlocken.frogportnetworks.screen;
 
+import com.herrderlocken.frogportnetworks.client.ItemSorting;
 import com.herrderlocken.frogportnetworks.client.StorageBrowser;
 import com.herrderlocken.frogportnetworks.menu.TerminalMenu;
 import com.herrderlocken.frogportnetworks.net.CraftRequestPacket;
@@ -20,6 +21,7 @@ import com.simibubi.create.foundation.gui.widget.ScrollInput;
 import com.simibubi.create.foundation.gui.widget.SelectionScrollInput;
 import net.createmod.catnip.gui.element.BoxElement;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -66,6 +68,13 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     private SelectionScrollInput netSelector;
     private List<DyeColor> availColors = new ArrayList<>();
 
+    // Suche / Sortierung / Gruppierung
+    private EditBox search;
+    private SelectionScrollInput sortInput;
+    private SelectionScrollInput groupInput;
+    private ItemSorting.Sort sortMode = ItemSorting.Sort.COUNT_DESC;
+    private ItemSorting.GroupBy groupMode = ItemSorting.GroupBy.NONE;
+
     private final StorageBrowser browser = new StorageBrowser(TerminalMenu.BROWSER_COLS, TerminalMenu.BROWSER_ROWS);
     private List<DeviceSnapshot> devices = new ArrayList<>();
     private int selectedTab; // 0 = All, sonst Gerät devices[tab-1]
@@ -73,12 +82,21 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     private long capUsed, capMax;
     private int reqTimer;
 
-    // Craftbar-Index + Craft-Auswahl
+    // Craftbar-Index
     private List<ItemStack> craftables = new ArrayList<>();
-    private ItemStack craftTarget = ItemStack.EMPTY;
+    /** Item → Ausbeute pro Craft (z.B. Sticks = 4), aus dem Craftbar-Paket. */
+    private final java.util.Map<net.minecraft.world.item.Item, Integer> craftYield = new java.util.HashMap<>();
+
+    // Craft-Warteschlange (mehrere Rezepte werden gesammelt und gemeinsam losgeschickt)
+    private static final int QUEUE_MAX = 6;
+    private static final int Q_ICON = 16;
+    private final List<ItemStack> queueItems = new ArrayList<>();
+    private final List<Integer> queueAmounts = new ArrayList<>();
+    private int queueSel = -1; // welcher Eintrag gerade per Scroll editiert wird
     private ScrollInput craftAmount;
     private Label craftAmountLabel;
-    private IconButton craftConfirm;
+    private IconButton craftSend;
+    private IconButton craftClear;
 
     // pro Frame berechnete Tab-Trefferflächen (für Klicks)
     private final List<int[]> tabRects = new ArrayList<>(); // {x, w, tabIndex}
@@ -144,51 +162,122 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
             addRenderableWidget(netLabel);
         }
 
-        // Craft-Auswahl-Widgets (versteckt bis ein Item per Rechtsklick gewählt wird)
-        int promptY = y + TerminalMenu.BROWSER_Y - 15;
-        craftAmountLabel = new Label(x + 78, promptY + 3, Component.empty()).withShadow().colored(COLOR_VALUE);
-        craftAmount = new ScrollInput(x + 72, promptY, 44, 12)
+        // Suche + Sortierung + Gruppierung (Controls-Zeile)
+        int ctrlY = y + TerminalMenu.CONTROLS_Y;
+        search = new EditBox(font, x + TerminalMenu.GRID_X + 1, ctrlY, 80, 12, Component.literal("Search"));
+        search.setBordered(true);
+        search.setHint(Component.literal("Search…"));
+        search.setResponder(s -> refreshBrowser());
+        addRenderableWidget(search);
+
+        Label sortLabel = new Label(x + 108, ctrlY + 2, Component.empty()).withShadow().colored(COLOR_VALUE);
+        sortInput = new SelectionScrollInput(x + 104, ctrlY - 1, 42, INPUT_H - 2);
+        sortInput.forOptions(optionLabels(ItemSorting.Sort.values(), v -> v.label));
+        sortInput.titled(Component.literal("Sort"));
+        sortInput.writingTo(sortLabel);
+        sortInput.setState(sortMode.ordinal());
+        sortInput.onChanged();
+        sortInput.calling(s -> { sortMode = ItemSorting.Sort.values()[s]; refreshBrowser(); });
+        addRenderableWidget(sortInput);
+        addRenderableWidget(sortLabel);
+
+        Label groupLabel = new Label(x + 152, ctrlY + 2, Component.empty()).withShadow().colored(COLOR_VALUE);
+        groupInput = new SelectionScrollInput(x + 148, ctrlY - 1, 42, INPUT_H - 2);
+        groupInput.forOptions(optionLabels(ItemSorting.GroupBy.values(), v -> v.label));
+        groupInput.titled(Component.literal("Group"));
+        groupInput.writingTo(groupLabel);
+        groupInput.setState(groupMode.ordinal());
+        groupInput.onChanged();
+        groupInput.calling(s -> { groupMode = ItemSorting.GroupBy.values()[s]; refreshBrowser(); });
+        addRenderableWidget(groupInput);
+        addRenderableWidget(groupLabel);
+
+        // Craft-Warteschlange-Widgets (versteckt, bis ein Item per Rechtsklick angereiht wird)
+        int stripTop = stripTop();
+        craftAmountLabel = new Label(x + 114, stripTop + 4, Component.empty()).withShadow().colored(COLOR_VALUE);
+        craftAmount = new ScrollInput(x + 108, stripTop + 2, 40, 12)
                 .withRange(1, 1025)
                 .format(v -> Component.literal("x" + v))
-                .titled(Component.literal("Craft amount"))
-                .writingTo(craftAmountLabel);
+                .titled(Component.literal("Amount"))
+                .writingTo(craftAmountLabel)
+                .calling(v -> {
+                    if (queueSel >= 0 && queueSel < queueAmounts.size()) queueAmounts.set(queueSel, v);
+                });
         craftAmount.setState(1);
         craftAmount.onChanged();
-        craftConfirm = new IconButton(x + 122, promptY - 2, AllIcons.I_CONFIRM);
-        craftConfirm.withCallback(this::confirmCraft);
-        craftConfirm.setToolTip(Component.literal("Send craft request to a Computer"));
+        craftSend = new IconButton(x + 152, stripTop, AllIcons.I_CONFIRM);
+        craftSend.withCallback(this::sendQueue);
+        craftSend.setToolTip(Component.literal("Send all craft jobs to a Computer"));
+        craftClear = new IconButton(x + 172, stripTop, AllIcons.I_TRASH);
+        craftClear.withCallback(this::clearQueue);
+        craftClear.setToolTip(Component.literal("Clear craft queue"));
         addRenderableWidget(craftAmount);
         addRenderableWidget(craftAmountLabel);
-        addRenderableWidget(craftConfirm);
-        hideCraftPrompt();
+        addRenderableWidget(craftSend);
+        addRenderableWidget(craftClear);
+        updateCraftWidgets();
 
         requestSnapshot();
         requestCraftables();
     }
 
-    private void selectCraft(ItemStack item) {
-        craftTarget = item.copyWithCount(1);
-        craftAmount.setState(1);
-        craftAmount.onChanged();
-        setCraftPromptVisible(true);
+    private int stripTop() { return topPos + TerminalMenu.BROWSER_Y - 16; }
+
+    /** Reiht ein Item in die Craft-Queue ein (oder wählt es zum Editieren, falls schon enthalten). */
+    private void enqueueCraft(ItemStack item) {
+        for (int i = 0; i < queueItems.size(); i++) {
+            if (ItemStack.isSameItemSameComponents(queueItems.get(i), item)) {
+                selectQueueEntry(i);
+                return;
+            }
+        }
+        if (queueItems.size() >= QUEUE_MAX) return;
+        queueItems.add(item.copyWithCount(1));
+        queueAmounts.add(1);
+        selectQueueEntry(queueItems.size() - 1);
     }
 
-    private void hideCraftPrompt() {
-        craftTarget = ItemStack.EMPTY;
-        setCraftPromptVisible(false);
+    private void selectQueueEntry(int index) {
+        queueSel = index;
+        if (index >= 0 && index < queueAmounts.size()) {
+            craftAmount.setState(queueAmounts.get(index));
+            craftAmount.onChanged();
+        }
+        updateCraftWidgets();
     }
 
-    private void setCraftPromptVisible(boolean v) {
+    private void removeQueueEntry(int index) {
+        if (index < 0 || index >= queueItems.size()) return;
+        queueItems.remove(index);
+        queueAmounts.remove(index);
+        if (queueItems.isEmpty()) queueSel = -1;
+        else selectQueueEntry(Math.min(queueSel, queueItems.size() - 1));
+        updateCraftWidgets();
+    }
+
+    private void clearQueue() {
+        queueItems.clear();
+        queueAmounts.clear();
+        queueSel = -1;
+        updateCraftWidgets();
+    }
+
+    /** Zeigt/versteckt die Queue-Widgets passend zum Füllstand. */
+    private void updateCraftWidgets() {
+        boolean v = !queueItems.isEmpty();
         if (craftAmount != null) { craftAmount.visible = v; craftAmount.active = v; }
         if (craftAmountLabel != null) craftAmountLabel.visible = v;
-        if (craftConfirm != null) { craftConfirm.visible = v; craftConfirm.active = v; }
+        if (craftSend != null) { craftSend.visible = v; craftSend.active = v; }
+        if (craftClear != null) { craftClear.visible = v; craftClear.active = v; }
     }
 
-    private void confirmCraft() {
-        if (craftTarget.isEmpty()) return;
+    private void sendQueue() {
+        if (queueItems.isEmpty()) return;
+        List<ItemStack> protos = new ArrayList<>();
+        for (ItemStack it : queueItems) protos.add(it.copyWithCount(1));
         PacketDistributor.sendToServer(
-                new CraftRequestPacket(menu.getBlockPos(), craftTarget.copyWithCount(1), craftAmount.getState()));
-        hideCraftPrompt();
+                new CraftRequestPacket(menu.getBlockPos(), protos, new ArrayList<>(queueAmounts)));
+        clearQueue();
     }
 
     private void requestCraftables() {
@@ -228,7 +317,16 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
     @Override
     public void onCraftables(List<ItemStack> items) {
         this.craftables = items;
+        craftYield.clear();
+        for (ItemStack it : items) {
+            if (!it.isEmpty()) craftYield.put(it.getItem(), Math.max(1, it.getCount()));
+        }
         refreshBrowser();
+    }
+
+    /** Ausbeute pro Craft für ein Item (Standard 1). */
+    private int yieldOf(ItemStack stack) {
+        return craftYield.getOrDefault(stack.getItem(), 1);
     }
 
     /** Befüllt den Browser je nach gewähltem Tab (All = aggregiert). */
@@ -258,7 +356,31 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
                 if (!present) entries.add(new DiskEntry(c.copyWithCount(1), 0));
             }
         }
-        browser.setEntries(entries);
+
+        // Suchfilter (Name oder Item-ID enthält den Text)
+        String q = search == null ? "" : search.getValue().trim().toLowerCase(java.util.Locale.ROOT);
+        if (!q.isEmpty()) {
+            entries.removeIf(e -> {
+                String name = e.item().getHoverName().getString().toLowerCase(java.util.Locale.ROOT);
+                String id = net.minecraft.core.registries.BuiltInRegistries.ITEM
+                        .getKey(e.item().getItem()).toString().toLowerCase(java.util.Locale.ROOT);
+                return !name.contains(q) && !id.contains(q);
+            });
+        }
+
+        // Sortierung + Gruppierung
+        if (groupMode == ItemSorting.GroupBy.NONE) {
+            ItemSorting.sort(entries, sortMode);
+            browser.setEntries(entries);
+        } else {
+            browser.setGroups(ItemSorting.group(entries, groupMode, sortMode));
+        }
+    }
+
+    private static <T> List<Component> optionLabels(T[] values, java.util.function.Function<T, String> fn) {
+        List<Component> out = new ArrayList<>();
+        for (T v : values) out.add(Component.literal(fn.apply(v)));
+        return out;
     }
 
     private static void merge(List<DiskEntry> list, DiskEntry e) {
@@ -324,18 +446,19 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
             slot(g, x + 58, rowNet, 90, INPUT_H);
         }
 
+        // Controls-Zeile: Sort/Group-Slots (Suche zeichnet ihren eigenen Rahmen)
+        slot(g, x + 104, y + TerminalMenu.CONTROLS_Y - 1, 42, INPUT_H - 2);
+        slot(g, x + 148, y + TerminalMenu.CONTROLS_Y - 1, 42, INPUT_H - 2);
+
         renderTabs(g);
 
-        if (craftTarget.isEmpty()) {
+        if (queueItems.isEmpty()) {
             // Kapazität rechts über dem Browser
             String cap = StorageBrowser.fmt(capUsed) + " / " + StorageBrowser.fmt(capMax) + " items";
             g.drawString(font, cap, x + TerminalMenu.WINDOW_W - 12 - font.width(cap),
                     y + TerminalMenu.BROWSER_Y - 10, COLOR_DIM, false);
         } else {
-            // Craft-Auswahl: Label + gewähltes Item (Mengen-Eingabe/Button sind Widgets)
-            int promptY = y + TerminalMenu.BROWSER_Y - 15;
-            g.drawString(font, "Craft", x + 12, promptY + 3, COLOR_TITLE, false);
-            g.renderItem(craftTarget, x + 44, promptY - 1);
+            renderCraftQueue(g);
         }
 
         for (Slot s : menu.slots) {
@@ -409,9 +532,59 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
         g.drawString(font, s, x + 2, y + 3, enabled ? COLOR_VALUE : COLOR_DIM, false);
     }
 
+    /** Zeichnet die Craft-Queue-Leiste (Item-Icons + Mengen) über dem Browser. */
+    private void renderCraftQueue(GuiGraphics g) {
+        int top = stripTop();
+        for (int i = 0; i < queueItems.size() && i < QUEUE_MAX; i++) {
+            int cx = leftPos + 10 + i * Q_ICON;
+            g.fill(cx, top, cx + Q_ICON, top + Q_ICON, SLOT_FILL);
+            g.renderOutline(cx, top, Q_ICON, Q_ICON, i == queueSel ? COLOR_OK : SLOT_BORDER);
+            g.renderItem(queueItems.get(i), cx + 0, top + 0);
+            // Anzeige = Gesamt-Output (Anzahl Crafts × Ausbeute) – „wie viele man am Ende erhält".
+            long total = (long) queueAmounts.get(i) * yieldOf(queueItems.get(i));
+            String amt = StorageBrowser.fmt(total);
+            g.pose().pushPose();
+            g.pose().translate(0, 0, 200);
+            float scale = 0.7f;
+            g.pose().scale(scale, scale, 1);
+            int tx = (int) ((cx + Q_ICON - 1 - font.width(amt) * scale) / scale);
+            int ty = (int) ((top + Q_ICON - 1 - 6 * scale) / scale);
+            g.drawString(font, amt, tx, ty, 0xFFFFFFFF, true);
+            g.pose().popPose();
+        }
+    }
+
+    /** Index des Queue-Icons unter dem Cursor, oder -1. */
+    private int queueIconAt(double mx, double my) {
+        int top = stripTop();
+        if (my < top || my >= top + Q_ICON) return -1;
+        for (int i = 0; i < queueItems.size() && i < QUEUE_MAX; i++) {
+            int cx = leftPos + 10 + i * Q_ICON;
+            if (mx >= cx && mx < cx + Q_ICON) return i;
+        }
+        return -1;
+    }
+
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
+
+        // Tooltip für Queue-Icons
+        int qi = queueIconAt(mouseX, mouseY);
+        if (qi >= 0) {
+            List<Component> lines = new ArrayList<>(getTooltipFromItem(minecraft, queueItems.get(qi)));
+            int crafts = queueAmounts.get(qi);
+            int yield = yieldOf(queueItems.get(qi));
+            lines.add(Component.literal(yield > 1
+                    ? "x" + crafts + " crafts → " + ((long) crafts * yield) + " items"
+                    : "Queued: x" + crafts)
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+            lines.add(Component.literal("Left: select · Right: remove")
+                    .withStyle(net.minecraft.ChatFormatting.AQUA));
+            g.renderComponentTooltip(font, lines, mouseX, mouseY);
+            return;
+        }
+
         DiskEntry hovered = browser.entryAt(browserX(), browserY(), mouseX, mouseY);
         if (hovered != null) {
             List<Component> lines = new ArrayList<>(getTooltipFromItem(minecraft, hovered.item()));
@@ -420,8 +593,14 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
                         .withStyle(net.minecraft.ChatFormatting.GRAY));
             }
             lines.add(Component.literal(hovered.count() > 0
-                    ? "Right-click: craft" : "Craftable — right-click to craft")
+                    ? "Left: take · Right: add to craft queue"
+                    : "Craftable — right-click to queue")
                     .withStyle(net.minecraft.ChatFormatting.AQUA));
+            int yield = yieldOf(hovered.item());
+            if (yield > 1) {
+                lines.add(Component.literal("Yields " + yield + " per craft")
+                        .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+            }
             g.renderComponentTooltip(font, lines, mouseX, mouseY);
         }
     }
@@ -447,11 +626,19 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
             }
         }
 
-        // Browser: Rechtsklick = Craft-Auswahl (Menge wählen + senden); Links = 1, Shift+Links = Stack.
+        // Craft-Queue-Leiste: Links = Eintrag wählen (Menge editieren), Rechts = entfernen.
+        int qi = queueIconAt(mx, my);
+        if (qi >= 0) {
+            if (button == 1) removeQueueEntry(qi);
+            else selectQueueEntry(qi);
+            return true;
+        }
+
+        // Browser: Rechtsklick = in Craft-Queue einreihen; Links = 1, Shift+Links = Stack.
         DiskEntry e = browser.entryAt(browserX(), browserY(), mx, my);
         if (e != null) {
             if (button == 1) {
-                selectCraft(e.item());
+                enqueueCraft(e.item());
                 return true;
             }
             if (e.count() > 0) { // vorrätig → entnehmen
@@ -463,19 +650,21 @@ public class TerminalScreen extends AbstractSimiContainerScreen<TerminalMenu> im
         }
         if (browser.inside(browserX(), browserY(), mx, my)) return true;
 
-        // Create-Widgets (Octets, DHCP, Net-Selektor, Craft-Auswahl) zuletzt.
-        if (super.mouseClicked(mx, my, button)) return true;
-
-        // Klick ins Leere schließt eine offene Craft-Auswahl.
-        if (!craftTarget.isEmpty()) {
-            hideCraftPrompt();
-            return true;
-        }
-        return false;
+        // Create-Widgets (Octets, DHCP, Net-Selektor, Craft-Queue) zuletzt.
+        return super.mouseClicked(mx, my, button);
     }
 
     private static boolean hit(int[] r, double mx, double my) {
         return mx >= r[0] && mx < r[0] + r[2] && my >= r[1] && my < r[1] + r[3];
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Tippen ins Suchfeld darf die GUI nicht schließen (z.B. 'e').
+        if (search != null && search.isFocused() && keyCode != 256) {
+            return search.keyPressed(keyCode, scanCode, modifiers) || search.canConsumeInput();
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

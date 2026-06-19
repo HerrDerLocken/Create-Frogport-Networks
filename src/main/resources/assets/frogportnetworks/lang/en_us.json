@@ -13,6 +13,7 @@
   "message.frogportnetworks.gateway_links": "Gateway couples: %s",
   "message.frogportnetworks.no_computer": "No available Network Computer reachable",
   "message.frogportnetworks.craft_started": "Crafting %s× %s",
+  "message.frogportnetworks.craft_queued": "Queued %s craft jobs",
 
   "item.frogportnetworks.ai_chip": "AI Chip (recursive crafting)",
   "item.frogportnetworks.mixing_upgrade": "Mixing Upgrade",
