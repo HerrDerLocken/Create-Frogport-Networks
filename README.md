@@ -6,7 +6,7 @@ A [Create](https://www.curseforge.com/minecraft/mc-mods/create) addon for Minecr
 
 ## The idea
 
-Create is fantastic at *making* things, but moving items across a big base quickly turns into a spaghetti of belts. Frogport Networks takes the opposite approach: lay down cables like network wiring, give every device an address, and let the network do the routing. If you've ever set up a home network — DHCP, static IPs, subnets — you'll feel right at home. If you haven't, the defaults just work.
+Create is fantastic at *making* things, but moving items across a big base quickly turns into a spaghetti of belts or chains. Frogport Networks takes the opposite approach: lay down cables like network wiring, give every device an address, and let the network do the routing. If you've ever set up a home network — DHCP, static IPs, subnets — you'll feel right at home. If you haven't, the defaults just work.
 
 ## How it works
 
@@ -48,7 +48,6 @@ If [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) is installed, the Ter
 - the JEI search bar and the Terminal search stay **in sync**,
 - and you can **drag an item from JEI** onto the grid to queue it for crafting.
 
-JEI is entirely optional — the mod runs fine without it.
 
 ## Building from source
 
